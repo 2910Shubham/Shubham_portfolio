@@ -47,7 +47,7 @@ const timeline = [
   },
   {
     date: "Jan 2025",
-    label: "Backend Stack Mastery",
+    label: "Backend Stack with Node.js",
     value: 500,
     type: "learning",
     trend: "up",
