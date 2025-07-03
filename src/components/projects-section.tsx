@@ -160,7 +160,7 @@ export default function ProjectsSection({
         "ResNet50",
         "Chart.js",
       ],
-      link: null,
+      link: "https://greenisland-uhi.vercel.app/",
       details: {
         overview:
           "Green Island is a full-stack web platform that leverages satellite imagery, semantic segmentation, and real-time sensor data to map temperature hotspots and green cover loss in Patna. The project provides actionable insights and recommendations for urban planners to mitigate Urban Heat Islands (UHIs).",
