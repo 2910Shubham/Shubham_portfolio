@@ -54,7 +54,7 @@ export default function ProjectsSection({
         "A campus marketplace for peer-to-peer product selling. Built with EJS, Node.js, Express, and MongoDB.",
       image: "projects/campusKart.png",
       technologies: ["Node.js", "Express", "EJS", "MongoDB"],
-      link: null, // No public web link
+      link: "https://dashboard.render.com/web/srv-d1oi1nre5dus73e8cq0g", // No public web link
       details: {
         overview:
           "Campus Kart is a peer-to-peer marketplace platform designed for students to buy and sell products within their campus. The solution is built using EJS for templating, Node.js and Express for the backend, and MongoDB for data storage.",
