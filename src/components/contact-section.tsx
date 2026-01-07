@@ -6,7 +6,7 @@ export default function ContactSection() {
     {
       icon: Mail,
       title: "Email",
-      content: "shubham@example.com",
+      content: "2910viwan@gmail.com",
     },
     {
       icon: MapPin,
