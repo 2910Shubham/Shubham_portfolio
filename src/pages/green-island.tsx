@@ -13,6 +13,7 @@ export default function GreenIslandPage() {
           <button
             onClick={() => navigate("/#green-island-uhi")}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Go back to Green Island section"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

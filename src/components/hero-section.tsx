@@ -27,7 +27,6 @@ const HeroSection = memo(function HeroSection() {
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-foreground mb-6">
             <KineticTypography 
               text="Hi, I'm Shubham Kumar Mishra" 
-              variant="heading"
               className="block"
             />
             <motion.span

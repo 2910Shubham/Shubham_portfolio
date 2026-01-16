@@ -4,13 +4,11 @@ import { memo } from "react";
 interface KineticTypographyProps {
   text: string;
   className?: string;
-  variant?: "heading" | "subheading" | "body";
 }
 
 const KineticTypography = memo(function KineticTypography({
   text,
   className = "",
-  variant = "body",
 }: KineticTypographyProps) {
   const containerVariants = {
     hidden: { opacity: 0 },

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, TrendingUp } from "lucide-react";
+import { Play } from "lucide-react";
 
 type Project = {
   id: string;
