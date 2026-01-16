@@ -12,44 +12,60 @@ import {
 export default function SkillsSection() {
   const skills = [
     {
-      name: "MERN Stack",
-      description: "MongoDB, Express, React, Node.js",
+      name: "Frontend",
+      description: "React, TypeScript, Tailwind CSS, Framer Motion",
       icon: Code,
+      category: "web",
+      size: "large",
     },
     {
-      name: "Flutter",
-      description: "Cross-platform mobile development",
-      icon: Smartphone,
-    },
-    {
-      name: "Firebase",
-      description: "Backend as a Service platform",
-      icon: Database,
-    },
-    {
-      name: "REST APIs",
-      description: "API design and integration",
-      icon: Globe,
-    },
-    {
-      name: "Nginx",
-      description: "Web server and reverse proxy",
+      name: "Backend",
+      description: "Node.js, Express, Python, REST APIs",
       icon: Server,
+      category: "backend",
+      size: "large",
     },
     {
-      name: "Hostinger",
-      description: "Web hosting and deployment",
-      icon: Globe,
+      name: "Mobile",
+      description: "Flutter, Dart, Cross-platform",
+      icon: Smartphone,
+      category: "mobile",
+      size: "default",
     },
     {
-      name: "Postman",
-      description: "API testing and documentation",
-      icon: TestTube,
+      name: "Databases",
+      description: "MongoDB, Firebase, PostgreSQL",
+      icon: Database,
+      category: "data",
+      size: "default",
     },
     {
-      name: "Git & GitHub",
-      description: "Version control and collaboration",
+      name: "AI/ML",
+      description: "TensorFlow, Python, Data Analysis",
+      icon: Code,
+      category: "ai",
+      size: "default",
+    },
+    {
+      name: "DevOps",
+      description: "Git, Docker, Nginx, Deployment",
       icon: GitBranch,
+      category: "devops",
+      size: "default",
+    },
+    {
+      name: "Tools & Testing",
+      description: "Postman, Jest, Vite, ESLint",
+      icon: TestTube,
+      category: "tools",
+      size: "default",
+    },
+    {
+      name: "Geospatial",
+      description: "GDAL, Leaflet.js, GeoJSON, Maps",
+      icon: Globe,
+      category: "geo",
+      size: "default",
     },
   ];
 
@@ -73,27 +89,44 @@ export default function SkillsSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="bento-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {skills.map((skill, index) => {
             const IconComponent = skill.icon;
+            const isLarge = skill.size === "large";
             return (
               <motion.div
                 key={skill.name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: index * 0.08 }}
                 viewport={{ once: true }}
-                className="skill-card bg-card p-6 rounded-xl shadow-lg border border-border text-center cursor-pointer group"
+                className={`bento-item group relative overflow-hidden cursor-pointer ${
+                  isLarge ? "lg:col-span-2 lg:row-span-1" : ""
+                }`}
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center group-hover:bg-transparent transition-colors duration-300">
-                  <IconComponent className="w-8 h-8 text-primary group-hover:text-white transition-colors duration-300" />
+                {/* Background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className={`w-12 h-12 mb-4 bg-muted rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1`}>
+                    <IconComponent className="w-6 h-6 text-primary group-hover:text-primary transition-colors duration-300" />
+                  </div>
+                  <h3 className={`font-bold text-foreground mb-2 group-hover:text-primary transition-colors duration-300 ${
+                    isLarge ? "text-xl" : "text-lg"
+                  }`}>
+                    {skill.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300 flex-grow">
+                    {skill.description}
+                  </p>
+                  
+                  {/* Hover indicator */}
+                  <div className="mt-4 flex items-center gap-1 text-primary text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                    <span>Learn more</span>
+                    <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2 group-hover:text-white transition-colors duration-300">
-                  {skill.name}
-                </h3>
-                <p className="text-sm text-muted-foreground group-hover:text-white/80 transition-colors duration-300">
-                  {skill.description}
-                </p>
               </motion.div>
             );
           })}
