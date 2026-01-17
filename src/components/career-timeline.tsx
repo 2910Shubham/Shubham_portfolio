@@ -35,7 +35,7 @@ const careerMilestones = [
   {
     date: "Mar 2025",
     title: "Wins and Losses",
-    story: "Won LogoVation hackathon, then lost at Hackit. The loss was harsh but crucial. It taught me that not every idea works, and that's okay. What matters is learning, iterating, and coming back stronger.",
+    story: "Won LogoVation hackathon, then lost at Hackit. The loss was harsh but crucial. It taught me that not every idea works, and that's okay. What matters is learning, iterating, and coming back stronger. Then won Techphiia hackathon—proof that persistence pays off.",
     type: "achievement",
   },
   {

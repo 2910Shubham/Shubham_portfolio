@@ -24,9 +24,9 @@ const HeroSection = memo(function HeroSection() {
           transition={{ duration: 0.6 }}
           className="float-animation"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-foreground mb-6">
+          <h1 className="text-4xl p-3 sm:text-5xl lg:text-7xl font-bold text-foreground mb-6">
             <KineticTypography 
-              text="Hi, I'm Shubham Kumar Mishra" 
+              text="Hi, I'm Shubham Kr. Mishra" 
               className="block"
             />
             <motion.span
@@ -44,7 +44,7 @@ const HeroSection = memo(function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 1.4 }}
           >
-            Specialized in Mobile & Data Engineering
+            Specialized in Mobile & Web Applications
           </motion.p>
         </motion.div>
 

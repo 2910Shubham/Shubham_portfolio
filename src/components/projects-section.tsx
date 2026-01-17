@@ -26,7 +26,7 @@ export default function ProjectsSection({
   const projects: Project[] = [
     {
       id: "tuku-go",
-      title: "Tuku Go - Ride-Sharing App (In Development)",
+      title: "Tuku Go - Ride-hailing App (In Development)",
       description:
         "Cross-platform Flutter app | Real-time location tracking | Integrated payments | MVP stage.",
       image: "projects/TukuGO.png",
@@ -48,6 +48,30 @@ export default function ProjectsSection({
           "SITUATION: Wanted to build a cost-effective ride-sharing solution with modern features. ACTION: Developed a cross-platform Flutter app with real-time location sync, driver matching algorithm, and integrated payment processing. RESULT: Functional MVP with core ride-sharing features. Demonstrates expertise in real-time data handling, mobile app architecture, and payment integration.",
       },
     },
+    {
+        id: "puffnmore",
+        title: "PuffNMore - E-commerce Platform",
+        description:
+          "$500K+ annual GMV | 15K+ monthly visitors | 3.5% cart abandonment | Production-grade platform.",
+        image: "projects/puffNmore.com.png",
+        technologies: ["React", "Node.js", "MongoDB", "Express.js", "Stripe"],
+        link: "https://puffsnmore.com/",
+        details: {
+          overview:
+            "Scalable full-featured e-commerce platform handling complex product catalog, secure payments, real-time inventory, and order fulfillment.",
+          features: [
+            "Dynamic product catalog with advanced filtering (10K+ SKUs, real-time inventory sync via WebSocket)",
+            "Secure checkout with Stripe & PayPal integration (3.5% cart abandonment, 99.9% uptime SLA)",
+            "User authentication & CRM system (50K+ registered users, 15K+ monthly organic visitors)",
+            "Order tracking with real-time updates & SMS notifications (5000+ monthly orders, 97% accuracy)",
+            "Admin dashboard with analytics, inventory management & sales forecasting (ML-powered)",
+            "Mobile-responsive design achieving 100/100 Lighthouse performance score",
+          ],
+          technologies: ["React", "Node.js", "Express.js", "MongoDB", "Stripe", "PayPal", "Redux"],
+          content:
+            "SITUATION: Retail client experiencing 8% cart abandonment & lacking real-time inventory visibility. ACTION: Built production-grade platform with 1-click checkout, real-time stock sync, abandoned cart recovery, & predictive analytics. RESULT: $500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment (vs 8% before), 99.9% uptime, 5K+ orders/month.",
+        },
+      },
     {
       id: "campus-kart",
       title: "Campus Kart - P2P Marketplace",
@@ -118,30 +142,6 @@ export default function ProjectsSection({
         technologies: ["HTML", "Tailwind CSS", "JavaScript", "Responsive Design"],
         content:
           "SITUATION: Coaching institute needed an online presence to reach students. ACTION: Built a lightweight, responsive website with course information, faculty profiles, and inquiry forms. Optimized for mobile access with minimal bandwidth requirements. RESULT: Professional online presence with clean information architecture and good user experience across devices.",
-      },
-    },
-    {
-      id: "puffnmore",
-      title: "PuffNMore - E-commerce Platform",
-      description:
-        "$500K+ annual GMV | 15K+ monthly visitors | 3.5% cart abandonment | Production-grade platform.",
-      image: "projects/puffNmore.com.png",
-      technologies: ["React", "Node.js", "MongoDB", "Express.js", "Stripe"],
-      link: "https://puffsnmore.com/",
-      details: {
-        overview:
-          "Scalable full-featured e-commerce platform handling complex product catalog, secure payments, real-time inventory, and order fulfillment.",
-        features: [
-          "Dynamic product catalog with advanced filtering (10K+ SKUs, real-time inventory sync via WebSocket)",
-          "Secure checkout with Stripe & PayPal integration (3.5% cart abandonment, 99.9% uptime SLA)",
-          "User authentication & CRM system (50K+ registered users, 15K+ monthly organic visitors)",
-          "Order tracking with real-time updates & SMS notifications (5000+ monthly orders, 97% accuracy)",
-          "Admin dashboard with analytics, inventory management & sales forecasting (ML-powered)",
-          "Mobile-responsive design achieving 100/100 Lighthouse performance score",
-        ],
-        technologies: ["React", "Node.js", "Express.js", "MongoDB", "Stripe", "PayPal", "Redux"],
-        content:
-          "SITUATION: Retail client experiencing 8% cart abandonment & lacking real-time inventory visibility. ACTION: Built production-grade platform with 1-click checkout, real-time stock sync, abandoned cart recovery, & predictive analytics. RESULT: $500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment (vs 8% before), 99.9% uptime, 5K+ orders/month.",
       },
     },
     {
