@@ -79,7 +79,7 @@ export default function ProjectsSection({
         "Campus marketplace platform | Real-time chat system | Seller verification | Development stage.",
       image: "projects/campusKart.png",
       technologies: ["Node.js", "Express", "MongoDB", "Socket.io"],
-      link: null,
+      link: "https://campuskart.meetshubham.site/",
       details: {
         overview:
           "A campus-focused peer-to-peer marketplace prototype demonstrating real-time communication, seller verification, and fraud detection systems. Built to explore marketplace architecture patterns and real-time technologies.",
