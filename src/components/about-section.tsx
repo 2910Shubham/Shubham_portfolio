@@ -132,9 +132,9 @@ export default function AboutSection() {
             className="order-1 lg:order-2 flex justify-center"
           >
             <img
-              src="images/mypic.jpeg"
+              src="images/shubham1.png"
               alt="Shubham Kumar Mishra - Professional Developer Portrait"
-              className="w-80 h-80 rounded-2xl shadow-2xl object-cover hover-lift"
+              className="w-80 h-80 rounded-full shadow-2xl object-cover hover-lift"
             />
           </motion.div>
         </div>
