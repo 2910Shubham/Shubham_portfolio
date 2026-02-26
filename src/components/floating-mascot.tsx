@@ -96,8 +96,9 @@ const FloatingMascot = memo(function FloatingMascot() {
         const s = stateRef.current;
         // Flee to opposite side of where mouse is
         const vw = window.innerWidth;
-        s.fleeX = s.mouseX > vw / 2 ? -200 : 200;
-        s.fleeY = -80 + Math.random() * 60;
+        const isMobile = vw < 768;
+        s.fleeX = s.mouseX > vw / 2 ? (isMobile ? -100 : -200) : (isMobile ? 100 : 200);
+        s.fleeY = -40 + Math.random() * 30;
 
         // Show random message
         const newMsg = messages[Math.floor(Math.random() * messages.length)];
@@ -126,6 +127,21 @@ const FloatingMascot = memo(function FloatingMascot() {
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("scroll", onScroll, { passive: true });
 
+        // Touch support for mobile
+        const onTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                s.mouseX = e.touches[0].clientX;
+                s.mouseY = e.touches[0].clientY;
+            }
+        };
+        const onTouchEnd = () => {
+            // Reset mouse pos so mascot returns after touch ends
+            s.mouseX = -1000;
+            s.mouseY = -1000;
+        };
+        window.addEventListener("touchmove", onTouchMove, { passive: true });
+        window.addEventListener("touchend", onTouchEnd);
+
         const animate = () => {
             const el = containerRef.current;
             if (!el) {
@@ -142,23 +158,24 @@ const FloatingMascot = memo(function FloatingMascot() {
             // ─── Position ───
             const vw = window.innerWidth;
             const vh = window.innerHeight;
+            const isMobile = vw < 768;
 
             // Hero position: find the exact center of the orbital system element
             const orbitalEl = document.getElementById("orbital-system");
             let heroX: number, heroY: number;
-            if (orbitalEl) {
+            if (orbitalEl && !isMobile) {
                 const orbRect = orbitalEl.getBoundingClientRect();
                 heroX = orbRect.left + orbRect.width / 2;
                 heroY = orbRect.top + orbRect.height / 2;
             } else {
-                // Fallback if element not found
-                heroX = vw * 0.75;
-                heroY = vh * 0.45;
+                // Mobile or fallback: bottom-right area
+                heroX = vw - (isMobile ? 60 : 140);
+                heroY = vh * (isMobile ? 0.82 : 0.45);
             }
 
-            // Floating position: far right, 45% down viewport
-            const floatX = vw - 140;
-            const floatY = vh * 0.45;
+            // Floating position
+            const floatX = vw - (isMobile ? 50 : 140);
+            const floatY = vh * (isMobile ? 0.85 : 0.45);
 
             // Interpolate
             const baseX = heroX + p * (floatX - heroX);
@@ -232,6 +249,8 @@ const FloatingMascot = memo(function FloatingMascot() {
         return () => {
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("touchmove", onTouchMove);
+            window.removeEventListener("touchend", onTouchEnd);
             cancelAnimationFrame(rafRef.current);
         };
     }, []);
@@ -245,7 +264,6 @@ const FloatingMascot = memo(function FloatingMascot() {
     return (
         <div
             ref={containerRef}
-            className="hidden lg:block"
             onClick={handleClick}
             style={{
                 position: "fixed",
@@ -258,15 +276,18 @@ const FloatingMascot = memo(function FloatingMascot() {
                 opacity: 0, // starts invisible, animate sets it to 1
             }}
         >
-            {/* The mascot video */}
-            <div style={{
-                width: 280,
-                height: 340,
+            {/* The mascot video — responsive size */}
+            <div className="mascot-size" style={{
                 filter: isDark
                     ? "drop-shadow(0 0 30px rgba(79,70,229,0.35)) drop-shadow(0 16px 24px rgba(0,0,0,0.4))"
                     : "drop-shadow(0 0 25px rgba(55,48,163,0.2)) drop-shadow(0 12px 20px rgba(13,11,26,0.12))",
                 transition: "filter 0.3s ease",
             }}>
+                <style>{`
+                    .mascot-size { width: 160px; height: 195px; }
+                    @media (min-width: 768px) { .mascot-size { width: 220px; height: 268px; } }
+                    @media (min-width: 1024px) { .mascot-size { width: 280px; height: 340px; } }
+                `}</style>
                 <GreenScreenVideo
                     src="/video/5f8ac36069c54ea2a81c2b9ba67c8fb5.mp4"
                     className="w-full h-full"
