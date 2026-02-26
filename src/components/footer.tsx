@@ -1,8 +1,28 @@
-import { Github, Linkedin, Mail, Twitter } from "lucide-react";
+import { Github, Linkedin, Mail, Twitter, ArrowUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const footerRef = useRef<HTMLElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const footerEl = footerRef.current;
+    if (!footerEl) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowScrollTop(entry.isIntersecting),
+      { threshold: 0.12 },
+    );
+
+    observer.observe(footerEl);
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const linkColumns = [
     {
@@ -40,7 +60,8 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="relative bg-background border-t border-border overflow-hidden">
+    <>
+    <footer ref={footerRef} className="relative bg-background border-t border-border overflow-hidden">
       {/* Top section */}
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 pt-20 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_1fr] gap-12 md:gap-8">
@@ -116,5 +137,21 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    <motion.button
+      initial={{ opacity: 0, x: 12, scale: 0.92 }}
+      animate={{
+        opacity: showScrollTop ? 1 : 0,
+        x: showScrollTop ? 0 : 12,
+        scale: showScrollTop ? 1 : 0.92,
+      }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      onClick={scrollToTop}
+      aria-label="Scroll to top"
+      className="fixed right-5 sm:right-7 bottom-7 sm:bottom-9 z-[1000] w-11 h-11 rounded-full border border-border bg-background/85 backdrop-blur-md text-foreground shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+      style={{ pointerEvents: showScrollTop ? "auto" : "none" }}
+    >
+      <ArrowUp className="w-4 h-4 mx-auto" />
+    </motion.button>
+    </>
   );
 }

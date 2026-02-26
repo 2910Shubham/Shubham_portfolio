@@ -80,11 +80,27 @@ export default function Navigation() {
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
   const mouseX = useMotionValue(-1000);
+  const switchAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") || "light";
+    const saved = localStorage.getItem("theme") || "dark";
     setIsDark(saved === "dark");
     if (saved === "dark") document.documentElement.classList.add("dark");
+  }, []);
+
+  useEffect(() => {
+    const audio = new Audio(encodeURI("/video/switchSound.mp3"));
+    audio.preload = "auto";
+    audio.volume = 0.65;
+    switchAudioRef.current = audio;
+
+    return () => {
+      if (switchAudioRef.current) {
+        switchAudioRef.current.pause();
+        switchAudioRef.current.currentTime = 0;
+      }
+      switchAudioRef.current = null;
+    };
   }, []);
 
   // Watch for external theme changes
@@ -96,6 +112,14 @@ export default function Navigation() {
   }, []);
 
   const toggleTheme = () => {
+    const sfx = switchAudioRef.current;
+    if (sfx) {
+      sfx.currentTime = 0;
+      void sfx.play().catch(() => {
+        // Ignore autoplay/gesture edge cases.
+      });
+    }
+
     const newDark = !isDark;
     setIsDark(newDark);
     localStorage.setItem("theme", newDark ? "dark" : "light");

@@ -207,6 +207,43 @@ const HeroSection = memo(function HeroSection() {
     return () => obs.disconnect();
   }, []);
 
+  useEffect(() => {
+    const audio = new Audio(encodeURI("/video/dragon-studio-keyboard-typing-sound-effect-335503.mp3"));
+    audio.preload = "auto";
+    audio.volume = 0.45;
+
+    let stopTimer: number | null = null;
+    let hasPlayed = false;
+
+    const stopAfterWindow = () => {
+      if (stopTimer) window.clearTimeout(stopTimer);
+      stopTimer = window.setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 2500);
+    };
+
+    const playOnce = () => {
+      if (hasPlayed) return;
+      hasPlayed = true;
+      audio.currentTime = 0;
+      void audio.play().then(() => {
+        stopAfterWindow();
+      }).catch(() => {
+        hasPlayed = false;
+      });
+    };
+
+    // Attempt on screen load
+    playOnce();
+
+    return () => {
+      if (stopTimer) window.clearTimeout(stopTimer);
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, []);
+
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
   return (

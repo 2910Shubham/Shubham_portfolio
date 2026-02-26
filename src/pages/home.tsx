@@ -6,7 +6,6 @@ import ExperienceStory from "@/components/experience-story";
 import ProjectsSection from "@/components/projects-section";
 import ContactSection from "@/components/contact-section";
 import Footer from "@/components/footer";
-import ProjectModal from "@/components/project-modal";
 import { GallerySection } from "./gallery";
 import { useState, useEffect } from "react";
 import CareerTimeline from "@/components/career-timeline";
@@ -15,24 +14,7 @@ import MouseFollower from "@/components/mouse-follower";
 import FloatingMascot from "@/components/floating-mascot";
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll";
 
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  technologies: string[];
-  link?: string | null;
-  details: {
-    overview: string;
-    features: string[];
-    technologies: string[];
-    content: string;
-  };
-}
-
 export default function HomePage() {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   // ─── Lenis buttery smooth scroll ───
@@ -66,16 +48,6 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
-  const handleProjectClick = (project: Project) => {
-    setSelectedProject(project);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedProject(null);
-  };
-
   return (
     <div className="min-h-screen relative" style={{ background: "var(--li-bg)" }}>
       {/* Light mode atmospheric gradient overlay */}
@@ -105,17 +77,12 @@ export default function HomePage() {
         <ExperienceStory />
         <SkillsSection />
         <CareerTimeline />
-        <ProjectsSection onProjectClick={handleProjectClick} />
+        <ProjectsSection />
         <ContactSection />
         <div id="gallery">
           <GallerySection />
         </div>
         <Footer />
-        <ProjectModal
-          project={selectedProject}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        />
       </div>
     </div>
   );

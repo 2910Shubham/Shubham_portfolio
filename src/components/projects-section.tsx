@@ -1,24 +1,10 @@
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { ExternalLink, ArrowRight, X, Sparkles, Layers, Zap, Globe, Smartphone, Brain } from "lucide-react";
-import { useRef, useState, useCallback, useEffect } from "react";
+import { motion, useInView } from "framer-motion";
+import { ExternalLink, ArrowLeft, ArrowRight, Sparkles, Layers, Zap, Globe, Smartphone, Brain, X } from "lucide-react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
+import { gsap } from "gsap";
+import CinematicWarpOverlay from "@/components/cinematic-warp-overlay";
+import { PROJECTS, type Project } from "@/data/projects";
 
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  technologies: string[];
-  category: string;
-  link?: string | null;
-  details: {
-    overview: string;
-    features: string[];
-    technologies: string[];
-    content: string;
-  };
-};
-
-/* ────── accent colors per project ────── */
 const ACCENT_MAP: Record<string, string> = {
   "tuku-go": "#00e5cc",
   "puffnmore": "#7c5cfc",
@@ -28,12 +14,12 @@ const ACCENT_MAP: Record<string, string> = {
   "green-island-uhi": "#2ecc71",
 };
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+const CATEGORY_ICONS: Record<string, JSX.Element> = {
   "Mobile App": <Smartphone className="w-3.5 h-3.5" />,
   "E-Commerce": <Globe className="w-3.5 h-3.5" />,
   "Marketplace": <Layers className="w-3.5 h-3.5" />,
   "Business Site": <Sparkles className="w-3.5 h-3.5" />,
-  "Education": <Zap className="w-3.5 h-3.5" />,
+  Education: <Zap className="w-3.5 h-3.5" />,
   "AI / Research": <Brain className="w-3.5 h-3.5" />,
 };
 
@@ -46,7 +32,8 @@ const STATUS_MAP: Record<string, { text: string; color: string }> = {
   "green-island-uhi": { text: "Research", color: "#7c5cfc" },
 };
 
-/* ────── Theme hook ────── */
+const GRID_SIZES: ("large" | "medium" | "small")[] = ["large", "medium", "small", "small", "medium", "large"];
+
 function useTheme() {
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
@@ -59,32 +46,59 @@ function useTheme() {
   return isDark;
 }
 
-/* ────── Bento Card Component ────── */
+function createClone(source: HTMLElement, rect?: DOMRect) {
+  const r = rect ?? source.getBoundingClientRect();
+  const clone = source.cloneNode(true) as HTMLElement;
+  const cs = window.getComputedStyle(source);
+
+  clone.style.position = "fixed";
+  clone.style.left = `${r.left}px`;
+  clone.style.top = `${r.top}px`;
+  clone.style.width = `${r.width}px`;
+  clone.style.height = `${r.height}px`;
+  clone.style.margin = "0";
+  clone.style.zIndex = "9998";
+  clone.style.pointerEvents = "none";
+  clone.style.overflow = "hidden";
+  clone.style.transformOrigin = "center center";
+  clone.style.willChange = "left,top,width,height,border-radius,filter,opacity,transform";
+  clone.style.borderRadius = cs.borderRadius || "20px";
+  clone.style.background = cs.background;
+
+  document.body.appendChild(clone);
+  return clone;
+}
+
 function BentoCard({
   project,
   index,
   size,
-  onProjectClick,
+  registerCardRef,
+  hidden,
+  transitioning,
+  onOpen,
 }: {
   project: Project;
   index: number;
   size: "large" | "medium" | "small";
-  onProjectClick: (p: Project) => void;
+  registerCardRef: (id: string, el: HTMLDivElement | null) => void;
+  hidden: boolean;
+  transitioning: boolean;
+  onOpen: (project: Project) => void;
 }) {
+  const isDark = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
   const accent = ACCENT_MAP[project.id] || "#7c5cfc";
   const status = STATUS_MAP[project.id];
   const catIcon = CATEGORY_ICONS[project.category];
-  const isDark = useTheme();
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const rect = cardRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    setMousePos({ x, y });
+    setMousePos({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
   }, []);
 
   const sizeClasses = {
@@ -95,831 +109,536 @@ function BentoCard({
 
   return (
     <motion.div
-      ref={cardRef}
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.6,
-        delay: index * 0.08,
-        ease: [0.23, 1, 0.32, 1],
+      ref={(el) => {
+        cardRef.current = el;
+        registerCardRef(project.id, el);
       }}
+      initial={{ opacity: 0, y: 30, scale: 0.96 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.56, delay: index * 0.06, ease: [0.23, 1, 0.32, 1] }}
       viewport={{ once: true, margin: "-40px" }}
-      className={`group relative cursor-pointer ${sizeClasses[size]}`}
-      onMouseEnter={() => setHovered(true)}
+      className={`group relative ${sizeClasses[size]} ${transitioning ? "cursor-wait" : "cursor-pointer"}`}
+      style={{ opacity: hidden ? 0 : 1 }}
       onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);
         setMousePos({ x: 0.5, y: 0.5 });
       }}
-      onClick={() => onProjectClick(project)}
-      layout
+      onClick={() => {
+        if (!transitioning) onOpen(project);
+      }}
+      whileTap={{ scale: 0.99 }}
     >
       <div
         className="relative h-full rounded-[20px] overflow-hidden transition-all duration-500"
         style={{
           background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.85)",
-          border: `1px solid ${hovered ? `${accent}50` : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"}`,
+          border: `1px solid ${hovered ? `${accent}50` : isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
           boxShadow: hovered
-            ? `0 0 0 1px ${accent}22, 0 20px 60px -10px ${accent}20, 0 4px 20px rgba(0,0,0,${isDark ? '0.3' : '0.08'}), inset 0 1px 0 ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)'}`
-            : `0 2px 20px rgba(0,0,0,${isDark ? '0.1' : '0.04'}), inset 0 1px 0 ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)'}`,
+            ? `0 0 0 1px ${accent}22, 0 20px 60px -10px ${accent}20, 0 4px 20px rgba(0,0,0,${isDark ? "0.3" : "0.08"})`
+            : `0 2px 20px rgba(0,0,0,${isDark ? "0.1" : "0.04"})`,
         }}
       >
-        {/* Spotlight gradient following cursor */}
         <div
-          className="absolute inset-0 pointer-events-none transition-opacity duration-500 rounded-[20px]"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-500"
           style={{
             opacity: hovered ? 1 : 0,
             background: `radial-gradient(600px circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${accent}12, transparent 40%)`,
           }}
         />
 
-        {/* Shimmer line on hover */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[1px] transition-opacity duration-500"
-          style={{
-            opacity: hovered ? 1 : 0,
-            background: `linear-gradient(90deg, transparent, ${accent}80, transparent)`,
-          }}
-        />
-
-        {/* Image area */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            height: size === "large" ? "60%" : size === "medium" ? "55%" : "55%",
-          }}
-        >
+        <div className="relative overflow-hidden" style={{ height: size === "large" ? "60%" : "55%" }}>
           <img
             src={project.image}
             alt={project.title}
             className="w-full h-full object-cover transition-all duration-700"
-            style={{
-              transform: hovered ? "scale(1.08)" : "scale(1)",
-              filter: hovered ? "brightness(1.1)" : "brightness(0.85)",
-            }}
+            style={{ transform: hovered ? "scale(1.08)" : "scale(1)", filter: hovered ? "brightness(1.08)" : "brightness(0.85)" }}
           />
-          {/* Gradient overlay on image */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.85) 100%), linear-gradient(135deg, ${accent}15, transparent 60%)`,
-            }}
-          />
+          <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.85) 100%), linear-gradient(135deg, ${accent}15, transparent 60%)` }} />
 
-          {/* Status badge */}
           {status && (
-            <div
-              className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-xl"
-              style={{
-                background: "rgba(0,0,0,0.5)",
-                border: `1px solid ${status.color}40`,
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ background: status.color }}
-              />
-              <span
-                className="text-[10px] font-mono font-semibold uppercase tracking-wider"
-                style={{ color: status.color }}
-              >
-                {status.text}
-              </span>
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-xl" style={{ background: "rgba(0,0,0,0.5)", border: `1px solid ${status.color}40` }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: status.color }} />
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider" style={{ color: status.color }}>{status.text}</span>
             </div>
           )}
 
-          {/* Number badge */}
-          <div
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl text-[11px] font-mono font-bold transition-all duration-300"
-            style={{
-              background: hovered ? `${accent}30` : isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.6)",
-              color: hovered ? accent : isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
-              border: `1px solid ${hovered ? `${accent}40` : isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-            }}
-          >
+          <div className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl text-[11px] font-mono font-bold" style={{ background: hovered ? `${accent}30` : isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.6)", color: hovered ? accent : isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
             {String(index + 1).padStart(2, "0")}
           </div>
-
-          {/* Category on image for large cards */}
-          {size === "large" && (
-            <div className="absolute bottom-4 left-5 flex items-center gap-2">
-              <span
-                className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-xl"
-                style={{
-                  background: "rgba(0,0,0,0.4)",
-                  color: accent,
-                  border: `1px solid ${accent}30`,
-                }}
-              >
-                {catIcon}
-                {project.category}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Content area */}
-        <div className="relative p-5 flex flex-col justify-between" style={{ height: size === "large" ? "40%" : size === "medium" ? "45%" : "45%" }}>
-          {/* Category tag for non-large cards */}
-          {size !== "large" && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <span
-                className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider"
-                style={{ color: accent, opacity: 0.8 }}
-              >
-                {catIcon}
-                {project.category}
-              </span>
-            </div>
-          )}
+        <div className="relative p-5 flex flex-col justify-between" style={{ height: size === "large" ? "40%" : "45%" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider" style={{ color: accent, opacity: 0.9 }}>
+              {catIcon}
+              {project.category}
+            </span>
+          </div>
 
           <div className="flex-1">
-            <h3
-              className="font-bold mb-2 leading-tight transition-colors duration-300"
-              style={{
-                fontSize: size === "large" ? "1.4rem" : size === "medium" ? "1.15rem" : "1rem",
-                color: isDark ? "#fff" : "#0D0B1A",
-              }}
-            >
+            <h3 className="font-bold mb-2 leading-tight" style={{ fontSize: size === "large" ? "1.4rem" : size === "medium" ? "1.15rem" : "1rem", color: isDark ? "#fff" : "#0D0B1A" }}>
               {project.title}
             </h3>
-            <p
-              className="text-sm leading-relaxed transition-all duration-300"
-              style={{
-                color: isDark ? "rgba(255,255,255,0.45)" : "rgba(13,11,26,0.55)",
-                display: size === "small" ? "-webkit-box" : undefined,
-                WebkitLineClamp: size === "small" ? 2 : undefined,
-                WebkitBoxOrient: size === "small" ? "vertical" : undefined,
-                overflow: size === "small" ? "hidden" : undefined,
-              }}
-            >
+            <p className="text-sm leading-relaxed" style={{ color: isDark ? "rgba(255,255,255,0.45)" : "rgba(13,11,26,0.55)", display: size === "small" ? "-webkit-box" : undefined, WebkitLineClamp: size === "small" ? 2 : undefined, WebkitBoxOrient: size === "small" ? "vertical" : undefined, overflow: size === "small" ? "hidden" : undefined }}>
               {project.description}
             </p>
           </div>
 
-          {/* Tech tags */}
           <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
-            {project.technologies.slice(0, size === "large" ? 5 : 3).map((tech, ti) => (
-              <span
-                key={tech}
-                className="text-[10px] font-mono px-2 py-0.5 rounded-md transition-all duration-300"
-                style={{
-                  background: hovered ? `${accent}15` : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-                  color: hovered ? accent : isDark ? "rgba(255,255,255,0.35)" : "rgba(13,11,26,0.45)",
-                  border: `1px solid ${hovered ? `${accent}25` : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-                  transitionDelay: `${ti * 40}ms`,
-                }}
-              >
+            {project.technologies.slice(0, size === "large" ? 5 : 3).map((tech) => (
+              <span key={tech} className="text-[10px] font-mono px-2 py-0.5 rounded-md" style={{ background: hovered ? `${accent}15` : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)", color: hovered ? accent : isDark ? "rgba(255,255,255,0.35)" : "rgba(13,11,26,0.45)" }}>
                 {tech}
               </span>
             ))}
-            {project.technologies.length > (size === "large" ? 5 : 3) && (
-              <span className="text-[10px] font-mono px-2 py-0.5" style={{ color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.25)' }}>
-                +{project.technologies.length - (size === "large" ? 5 : 3)}
-              </span>
-            )}
           </div>
 
-          {/* Bottom row */}
           <div className="flex items-center justify-between mt-auto">
-            <span
-              className="flex items-center gap-2 text-xs font-medium transition-all duration-300"
-              style={{ color: hovered ? accent : isDark ? "rgba(255,255,255,0.3)" : "rgba(13,11,26,0.35)" }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full transition-all duration-500"
-                style={{
-                  background: accent,
-                  boxShadow: hovered ? `0 0 10px ${accent}` : "none",
-                }}
-              />
-              View Details
-              <ArrowRight
-                className="w-3.5 h-3.5 transition-transform duration-300"
-                style={{
-                  transform: hovered ? "translateX(4px)" : "translateX(0)",
-                }}
-              />
+            <span className="flex items-center gap-2 text-xs font-medium" style={{ color: hovered ? accent : isDark ? "rgba(255,255,255,0.3)" : "rgba(13,11,26,0.35)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
+              Enter Project
+              <ArrowRight className="w-3.5 h-3.5" />
             </span>
 
             {project.link && (
-              <a
-                href={project.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-lg transition-all duration-300"
-                style={{
-                  color: hovered ? accent : isDark ? "rgba(255,255,255,0.25)" : "rgba(13,11,26,0.3)",
-                  background: hovered ? `${accent}10` : "transparent",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
+              <a href={project.link} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg" style={{ color: hovered ? accent : isDark ? "rgba(255,255,255,0.25)" : "rgba(13,11,26,0.3)", background: hovered ? `${accent}10` : "transparent" }} onClick={(e) => e.stopPropagation()}>
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}
           </div>
         </div>
-
-        {/* Bottom accent line */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-700"
-          style={{
-            background: hovered
-              ? `linear-gradient(90deg, transparent, ${accent}, transparent)`
-              : "transparent",
-            opacity: hovered ? 1 : 0,
-          }}
-        />
       </div>
     </motion.div>
   );
 }
 
-/* ────── Smooth Project Detail Modal ────── */
-function ProjectDetailModal({
-  project,
-  isOpen,
-  onClose,
-}: {
-  project: Project | null;
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const accent = project ? ACCENT_MAP[project.id] || "#7c5cfc" : "#7c5cfc";
-  const status = project ? STATUS_MAP[project.id] : null;
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (isOpen) {
-      window.addEventListener("keydown", handleEsc);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      window.removeEventListener("keydown", handleEsc);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
-
-  if (!project) return null;
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
-          onClick={onClose}
-        >
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0"
-            style={{
-              background: "rgba(0,0,0,0.85)",
-              backdropFilter: "blur(20px)",
-            }}
-          />
-
-          {/* Modal */}
-          <motion.div
-            ref={modalRef}
-            initial={{ opacity: 0, scale: 0.92, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 30 }}
-            transition={{
-              type: "spring",
-              damping: 30,
-              stiffness: 400,
-              mass: 0.8,
-            }}
-            className="relative w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-[24px]"
-            style={{
-              background: "linear-gradient(180deg, rgba(20,20,30,0.98), rgba(10,10,18,0.99))",
-              border: `1px solid ${accent}25`,
-              boxShadow: `0 0 0 1px ${accent}15, 0 40px 100px -20px ${accent}25, 0 0 80px ${accent}08`,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Top glow line */}
-            <div
-              className="absolute top-0 left-0 right-0 h-[1px]"
-              style={{
-                background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-              }}
-            />
-
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="absolute top-5 right-5 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.6)",
-              }}
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Scrollable content */}
-            <div className="overflow-y-auto max-h-[92vh] custom-scrollbar" data-lenis-prevent>
-              {/* Hero Image */}
-              <div className="relative h-[280px] sm:h-[340px] overflow-hidden">
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                  style={{ filter: "brightness(0.7)" }}
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `linear-gradient(180deg, transparent 20%, rgba(10,10,18,0.95) 100%), linear-gradient(135deg, ${accent}20, transparent 60%)`,
-                  }}
-                />
-
-                {/* Title overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                  <div className="flex items-center gap-3 mb-3 flex-wrap">
-                    {status && (
-                      <span
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-semibold uppercase tracking-wider"
-                        style={{
-                          background: `${status.color}15`,
-                          color: status.color,
-                          border: `1px solid ${status.color}30`,
-                        }}
-                      >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full animate-pulse"
-                          style={{ background: status.color }}
-                        />
-                        {status.text}
-                      </span>
-                    )}
-                    <span
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-wider"
-                      style={{
-                        background: `${accent}15`,
-                        color: accent,
-                        border: `1px solid ${accent}30`,
-                      }}
-                    >
-                      {CATEGORY_ICONS[project.category]}
-                      {project.category}
-                    </span>
-                  </div>
-                  <motion.h2
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15, duration: 0.5 }}
-                    className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight"
-                  >
-                    {project.title}
-                  </motion.h2>
-                </div>
-              </div>
-
-              {/* Content body */}
-              <div className="p-6 sm:p-8 space-y-8">
-                {/* Overview */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <h4
-                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
-                    style={{ color: accent }}
-                  >
-                    Overview
-                  </h4>
-                  <p className="text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
-                    {project.details.overview}
-                  </p>
-                </motion.div>
-
-                {/* Key Features */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <h4
-                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
-                    style={{ color: accent }}
-                  >
-                    Key Features
-                  </h4>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {project.details.features.map((feature, fi) => (
-                      <motion.div
-                        key={fi}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.35 + fi * 0.06 }}
-                        className="flex items-start gap-3 p-3 rounded-xl transition-all duration-300 hover:bg-white/[0.03]"
-                        style={{
-                          border: "1px solid rgba(255,255,255,0.04)",
-                        }}
-                      >
-                        <span
-                          className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-mono font-bold"
-                          style={{
-                            background: `${accent}15`,
-                            color: accent,
-                            border: `1px solid ${accent}20`,
-                          }}
-                        >
-                          {fi + 1}
-                        </span>
-                        <span className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
-                          {feature}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Technologies */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <h4
-                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
-                    style={{ color: accent }}
-                  >
-                    Tech Stack
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {project.details.technologies.map((tech, ti) => (
-                      <motion.span
-                        key={tech}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.45 + ti * 0.04 }}
-                        className="px-4 py-2 rounded-xl text-sm font-mono transition-all duration-300 hover:scale-105"
-                        style={{
-                          background: `${accent}10`,
-                          color: accent,
-                          border: `1px solid ${accent}20`,
-                        }}
-                      >
-                        {tech}
-                      </motion.span>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Impact / Result */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="rounded-2xl p-5"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent}08, transparent)`,
-                    border: `1px solid ${accent}15`,
-                  }}
-                >
-                  <h4
-                    className="text-xs font-mono uppercase tracking-[0.2em] mb-3"
-                    style={{ color: accent }}
-                  >
-                    Impact & Results
-                  </h4>
-                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
-                    {project.details.content}
-                  </p>
-                </motion.div>
-
-                {/* CTA */}
-                {project.link && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.55 }}
-                    className="flex justify-center pt-2 pb-4"
-                  >
-                    <a
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-8 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
-                        color: "#000",
-                        boxShadow: `0 8px 30px ${accent}30`,
-                      }}
-                    >
-                      <Globe className="w-4 h-4" />
-                      Visit Live Project
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ────── Bento grid layout ────── */
-// Define sizes: first 2 are featured (large/medium), rest alternate
-const GRID_SIZES: ("large" | "medium" | "small")[] = [
-  "large",   // Tuku Go — hero card
-  "medium",  // PuffNMore — tall side card
-  "small",   // Campus Kart
-  "small",   // Mishras
-  "medium",  // Success Gateway — tall card
-  "large",   // Green Island UHI — another hero
-];
-
-/* ────── main section ────── */
-export default function ProjectsSection({
-  onProjectClick: _externalClick,
-}: {
-  onProjectClick: (project: any) => void;
-}) {
+export default function ProjectsSection() {
+  const isDark = useTheme();
   const sectionRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
+  const ctxRef = useRef<gsap.Context | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const zoomSfxRef = useRef<HTMLAudioElement | null>(null);
+
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [hiddenCardId, setHiddenCardId] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [warpProgress, setWarpProgress] = useState(0);
+  const [warpActive, setWarpActive] = useState(false);
+  const [detailLoadStep, setDetailLoadStep] = useState(0);
 
-  const handleProjectClick = (project: Project) => {
+  useLayoutEffect(() => {
+    if (!sectionRef.current) return;
+    ctxRef.current = gsap.context(() => {}, sectionRef);
+    return () => ctxRef.current?.revert();
+  }, []);
+
+  useEffect(() => {
+    const audio = new Audio(encodeURI("/video/Zoom 8.mp3"));
+    audio.preload = "auto";
+    audio.volume = 0.5;
+    zoomSfxRef.current = audio;
+
+    return () => {
+      zoomSfxRef.current?.pause();
+      zoomSfxRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showDetailPanel && selectedProject && !isTransitioning) {
+        void handleBackToCard();
+      }
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [showDetailPanel, selectedProject, isTransitioning]);
+
+  const registerCardRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    cardRefs.current[id] = el;
+  }, []);
+
+  const openProject = useCallback((project: Project) => {
+    if (isTransitioning) return;
+
+    const cardEl = cardRefs.current[project.id];
+    const contentEl = contentRef.current;
+    if (!cardEl || !contentEl) return;
+
+    const clone = createClone(cardEl);
+    const driver = { p: 0 };
+
+    const sfx = zoomSfxRef.current;
+    if (sfx) {
+      sfx.currentTime = 0;
+      void sfx.play().catch(() => {
+        // Ignore autoplay/gesture edge cases.
+      });
+    }
+
     setSelectedProject(project);
-    setIsModalOpen(true);
-  };
+    setShowDetailPanel(true);
+    setDetailLoadStep(0);
+    setHiddenCardId(project.id);
+    setIsTransitioning(true);
+    setWarpActive(true);
+    setWarpProgress(0);
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setSelectedProject(null), 300);
-  };
+    const rollback = () => {
+      clone.remove();
+      setShowDetailPanel(false);
+      setSelectedProject(null);
+      setHiddenCardId(null);
+      setWarpActive(false);
+      setWarpProgress(0);
+      setIsTransitioning(false);
+      gsap.set(contentEl, { autoAlpha: 1, filter: "blur(0px)" });
+    };
 
-  const projects: Project[] = [
-    {
-      id: "tuku-go",
-      title: "Tuku Go — Ride-hailing App",
-      category: "Mobile App",
-      description:
-        "Cross-platform Flutter app with real-time location tracking, integrated payments, and MVP architecture.",
-      image: "projects/TukuGO.png",
-      technologies: ["Flutter", "Dart", "Firebase", "Google Maps API"],
-      link: null,
-      details: {
-        overview:
-          "A ride-sharing mobile application built with Flutter and Dart. Designed to provide a modern alternative to existing ride services with real-time location tracking and integrated payments.",
-        features: [
-          "Real-time ride booking and driver-passenger matching",
-          "Live GPS tracking using Firebase Realtime Database",
-          "Secure in-app payments with Stripe & RazorPay integration",
-          "Push notifications for ride status updates",
-          "User authentication with email & phone verification",
-          "Rating and review system for accountability",
-        ],
-        technologies: ["Flutter", "Dart", "Firebase", "Google Maps API", "Stripe", "RazorPay"],
-        content:
-          "SITUATION: Wanted to build a cost-effective ride-sharing solution. ACTION: Developed a cross-platform Flutter app with real-time location sync, driver matching, and payment processing. RESULT: Functional MVP demonstrating expertise in real-time data handling and payment integration.",
-      },
-    },
-    {
-      id: "puffnmore",
-      title: "PuffNMore — E-Commerce Platform",
-      category: "E-Commerce",
-      description:
-        "$500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment. Production-grade storefront.",
-      image: "projects/puffNmore.com.png",
-      technologies: ["React", "Node.js", "MongoDB", "Express.js", "Stripe"],
-      link: "https://puffsnmore.com/",
-      details: {
-        overview:
-          "Scalable full-featured e-commerce platform handling complex product catalog, secure payments, real-time inventory, and order fulfillment.",
-        features: [
-          "Dynamic product catalog with advanced filtering (10K+ SKUs)",
-          "Secure checkout with Stripe & PayPal integration",
-          "User authentication & CRM system (50K+ registered users)",
-          "Order tracking with real-time updates & SMS notifications",
-          "Admin dashboard with analytics and sales forecasting",
-          "Mobile-responsive design with 100/100 Lighthouse score",
-        ],
-        technologies: ["React", "Node.js", "Express.js", "MongoDB", "Stripe", "PayPal", "Redux"],
-        content:
-          "Built production-grade platform with 1-click checkout, real-time stock sync, abandoned cart recovery. RESULT: $500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment.",
-      },
-    },
-    {
-      id: "campus-kart",
-      title: "Campus Kart — P2P Marketplace",
-      category: "Marketplace",
-      description:
-        "Campus marketplace with real-time chat, seller verification, and full development lifecycle ownership.",
-      image: "projects/campusKart.png",
-      technologies: ["Node.js", "Express", "MongoDB", "Socket.io"],
-      link: "https://campuskart.meetshubham.site/",
-      details: {
-        overview:
-          "A campus-focused peer-to-peer marketplace with real-time communication, seller verification, and fraud detection systems.",
-        features: [
-          "User authentication & seller verification system",
-          "Real-time chat between buyers & sellers with Socket.io",
-          "Product listing with search, filtering & recommendations",
-          "Payment system with escrow-based protection",
-          "Order management with automated status updates",
-          "Admin dashboard with moderation tools & fraud detection",
-        ],
-        technologies: ["Node.js", "Express.js", "MongoDB", "Socket.io", "JWT Auth"],
-        content:
-          "Built a peer-to-peer marketplace with Socket.io real-time chat, seller verification workflows, escrow payment design, and fraud detection.",
-      },
-    },
-    {
-      id: "mishras-enterprises",
-      title: "Mishras Enterprises — Company Website",
-      category: "Business Site",
-      description:
-        "B2B company portal with service showcase, lead capture forms, and modern React build.",
-      image: "projects/mishrasenterprises.in.png",
-      technologies: ["React", "Node.js", "Vite", "Tailwind CSS"],
-      link: "https://mishrasenterprises.in/",
-      details: {
-        overview:
-          "A professional B2B company website built with modern web technologies — services, company info, and contact forms.",
-        features: [
-          "Responsive service catalog and company information",
-          "SEO-friendly structure with meta tags",
-          "Contact forms for lead capture with email notifications",
-          "Mobile-responsive design using Tailwind CSS",
-          "Fast load times with Vite build tooling",
-          "Analytics integration for traffic monitoring",
-        ],
-        technologies: ["React", "Vite", "Tailwind CSS", "Node.js"],
-        content:
-          "Built a modern, responsive business website with React and Vite focusing on performance and lead capture.",
-      },
-    },
-    {
-      id: "success-gateway",
-      title: "Success Gateway — Coaching Institute",
-      category: "Education",
-      description:
-        "Static website with course portal, mobile-responsive design, and SEO optimization.",
-      image: "projects/successgateway.co.in.png",
-      technologies: ["HTML", "Tailwind CSS", "JavaScript"],
-      link: "https://successgateway.co.in/",
-      details: {
-        overview:
-          "Professional informational website for a coaching institute with course information, faculty details, and contact forms.",
-        features: [
-          "Course information and curriculum details",
-          "Faculty profiles with credentials",
-          "Contact forms for admission inquiries",
-          "Mobile-responsive optimized for low bandwidth",
-          "Student testimonials gallery",
-          "SEO-optimized structure",
-        ],
-        technologies: ["HTML", "Tailwind CSS", "JavaScript", "Responsive Design"],
-        content:
-          "Built a lightweight, responsive website with course information, faculty profiles, and inquiry forms optimized for mobile.",
-      },
-    },
-    {
-      id: "green-island-uhi",
-      title: "Green Island — Urban Heat Visualizer",
-      category: "AI / Research",
-      description:
-        "Data-driven platform to detect, visualize, and mitigate Urban Heat Islands using satellite data and AI.",
-      image: "projects/UHI.png",
-      technologies: ["Next.js", "Streamlit", "Leaflet.js", "Python", "TensorFlow", "GDAL"],
-      link: "https://greenisland-uhi.vercel.app/",
-      details: {
-        overview:
-          "Full-stack web platform leveraging satellite imagery, semantic segmentation, and real-time sensor data to map temperature hotspots in Patna.",
-        features: [
-          "Real-time temperature monitoring",
-          "Roof detection using UNet + ResNet50",
-          "Heatmap visualization from satellite data",
-          "Vegetation density analysis",
-          "GeoJSON-based area segmentation with Leaflet.js",
-          "Green intervention recommendations",
-        ],
-        technologies: [
-          "Next.js", "Streamlit", "Leaflet.js",
-          "Python", "GDAL", "TensorFlow", "Scikit-learn",
-        ],
-        content:
-          "Revealed 6.88°C rise in Patna's surface temperature (1990–2022) and demonstrated AI-powered UHI mapping for urban planners.",
-      },
-    },
-  ];
+    const waitForDetailAndAnimate = (triesLeft = 12) => {
+      const detailEl = detailPanelRef.current;
+      if (!detailEl) {
+        if (triesLeft <= 0) {
+          rollback();
+          return;
+        }
+        window.setTimeout(() => waitForDetailAndAnimate(triesLeft - 1), 16);
+        return;
+      }
+
+      gsap.set(detailEl, { autoAlpha: 0 });
+      const runAnimation = () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "power4.inOut" },
+          onComplete: () => {
+            clone.remove();
+            setHiddenCardId(null);
+            setWarpActive(false);
+            setWarpProgress(0);
+            setIsTransitioning(false);
+          },
+        });
+
+        tl.to(driver, {
+          p: 1,
+          duration: 0.95,
+          onUpdate: () => setWarpProgress(driver.p),
+        }, 0);
+
+        tl.to(contentEl, { autoAlpha: 0.08, filter: "blur(14px)", duration: 0.9 }, 0);
+
+        tl.to(clone, {
+          left: 0,
+          top: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          borderRadius: 0,
+          duration: 0.95,
+        }, 0);
+
+        tl.to(detailEl, { autoAlpha: 1, duration: 0.28, ease: "power2.out" }, 0.7);
+      };
+
+      if (ctxRef.current) {
+        ctxRef.current.add(runAnimation);
+      } else {
+        runAnimation();
+      }
+    };
+
+    requestAnimationFrame(() => {
+      waitForDetailAndAnimate();
+    });
+  }, [isTransitioning]);
+
+  const handleBackToCard = useCallback(() => {
+    if (!selectedProject || isTransitioning) return;
+
+    const cardEl = cardRefs.current[selectedProject.id];
+    const detailEl = detailPanelRef.current;
+    const contentEl = contentRef.current;
+    if (!cardEl || !detailEl || !contentEl) return;
+
+    const to = cardEl.getBoundingClientRect();
+    const clone = createClone(detailEl, detailEl.getBoundingClientRect());
+    const driver = { p: 0 };
+
+    setHiddenCardId(selectedProject.id);
+    setIsTransitioning(true);
+    setWarpActive(true);
+
+    gsap.set(detailEl, { autoAlpha: 0 });
+
+    ctxRef.current?.add(() => {
+      const tl = gsap.timeline({
+        defaults: { ease: "power4.inOut" },
+        onComplete: () => {
+          clone.remove();
+          setShowDetailPanel(false);
+          setSelectedProject(null);
+          setHiddenCardId(null);
+          setWarpActive(false);
+          setWarpProgress(0);
+          setIsTransitioning(false);
+        },
+      });
+
+      tl.to(driver, {
+        p: 0.8,
+        duration: 0.22,
+        ease: "power2.out",
+        onUpdate: () => setWarpProgress(driver.p),
+      }, 0);
+
+      tl.to(driver, {
+        p: 0,
+        duration: 0.78,
+        ease: "power4.inOut",
+        onUpdate: () => setWarpProgress(driver.p),
+      }, 0.2);
+
+      tl.to(contentEl, {
+        autoAlpha: 1,
+        filter: "blur(0px)",
+        duration: 0.86,
+        ease: "power3.out",
+      }, 0.08);
+
+      tl.to(clone, {
+        left: to.left,
+        top: to.top,
+        width: to.width,
+        height: to.height,
+        borderRadius: 20,
+        duration: 0.86,
+      }, 0.14);
+    });
+  }, [selectedProject, isTransitioning]);
+
+  useEffect(() => {
+    if (!showDetailPanel) return;
+    const scroller = detailScrollRef.current;
+    if (!scroller) return;
+    scroller.scrollTo({ top: 0, behavior: "auto" });
+    setDetailLoadStep(0);
+  }, [showDetailPanel, selectedProject?.id]);
+
+  const handleDetailScroll = useCallback(() => {
+    const scroller = detailScrollRef.current;
+    if (!scroller) return;
+    const y = scroller.scrollTop;
+    const h = scroller.clientHeight || 1;
+
+    let step = 0;
+    if (y > h * 0.16) step = 1;
+    if (y > h * 0.52) step = 2;
+    if (y > h * 0.95) step = 3;
+
+    setDetailLoadStep((prev) => (prev === step ? prev : step));
+  }, []);
 
   return (
     <>
+      <CinematicWarpOverlay progress={warpProgress} active={warpActive} zIndex={9996} />
+
       <section ref={sectionRef} id="projects" className="py-24 relative overflow-hidden">
-        {/* Ambient background */}
         <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20"
-            style={{ background: "rgba(124, 92, 252, 0.15)" }}
-          />
-          <div
-            className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-15"
-            style={{ background: "rgba(0, 229, 204, 0.1)" }}
-          />
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20" style={{ background: "rgba(124, 92, 252, 0.15)" }} />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-15" style={{ background: "rgba(0, 229, 204, 0.1)" }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[1]">
-          {/* Section header */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
-              style={{
-                background: "rgba(124, 92, 252, 0.08)",
-                border: "1px solid rgba(124, 92, 252, 0.15)",
-              }}
-            >
+        <div ref={contentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[1]">
+          <motion.div initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ duration: 0.8 }} className="text-center mb-16">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6" style={{ background: "rgba(124, 92, 252, 0.08)", border: "1px solid rgba(124, 92, 252, 0.15)" }}>
               <Layers className="w-3.5 h-3.5" style={{ color: "#7c5cfc" }} />
-              <span className="text-xs font-mono uppercase tracking-widest" style={{ color: "#7c5cfc" }}>
-                Portfolio
-              </span>
+              <span className="text-xs font-mono uppercase tracking-widest" style={{ color: "#7c5cfc" }}>Portfolio</span>
             </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
-              style={{ color: "var(--li-text)" }}
-            >
+            <motion.h2 initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }} className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style={{ color: "var(--li-text)" }}>
               Featured Projects
             </motion.h2>
 
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={isInView ? { scaleX: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
-              className="w-24 h-[2px] mx-auto rounded-full origin-left"
-              style={{
-                background: "linear-gradient(90deg, #7c5cfc, #00e5cc)",
-              }}
-            />
-
-            <motion.p
-              initial={{ opacity: 0, y: 15 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-6 max-w-3xl mx-auto text-lg"
-              style={{ color: "var(--li-text-dim)" }}
-            >
-              Production-grade applications with measurable impact. Mobile-first architecture,
-              AI/ML integration, and data engineering at scale.
+            <motion.p initial={{ opacity: 0, y: 15 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.4 }} className="mt-6 max-w-3xl mx-auto text-lg" style={{ color: "var(--li-text-dim)" }}>
+              Production-grade applications with measurable impact. Mobile-first architecture, AI/ML integration, and data engineering at scale.
             </motion.p>
           </motion.div>
 
-          {/* Bento Grid */}
-          <div
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px] sm:auto-rows-[300px]"
-          >
-            {projects.map((project, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px] sm:auto-rows-[300px]">
+            {PROJECTS.map((project, index) => (
               <BentoCard
                 key={project.id}
                 project={project}
                 index={index}
                 size={GRID_SIZES[index] || "small"}
-                onProjectClick={handleProjectClick}
+                registerCardRef={registerCardRef}
+                hidden={hiddenCardId === project.id}
+                transitioning={isTransitioning}
+                onOpen={openProject}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Project Detail Modal */}
-      <ProjectDetailModal
-        project={selectedProject}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
+      {showDetailPanel && selectedProject && (
+        <div
+          ref={detailPanelRef}
+          className="fixed inset-0 z-[9995]"
+          style={{
+            background: "rgba(10,10,18,0.98)",
+            backdropFilter: "blur(14px)",
+          }}
+        >
+          <div
+            ref={detailScrollRef}
+            className="h-full overflow-y-auto no-scrollbar"
+            data-lenis-prevent
+            onScroll={handleDetailScroll}
+            onWheelCapture={(e) => e.stopPropagation()}
+            onTouchMoveCapture={(e) => e.stopPropagation()}
+            style={{ overscrollBehavior: "contain", scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            <div className="min-h-screen px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
+              <div
+                className="relative overflow-hidden rounded-[24px] border"
+                style={{
+                  borderColor: `${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}40`,
+                  boxShadow: `0 0 0 1px ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}20, 0 40px 100px -24px ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}30`,
+                  background: "rgba(10,10,18,0.94)",
+                }}
+              >
+                <button
+                  onClick={handleBackToCard}
+                  className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center border text-white/80 hover:text-white transition-colors"
+                  style={{ borderColor: "rgba(255,255,255,0.24)", background: "rgba(0,0,0,0.35)" }}
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="relative h-[52vh] sm:h-[58vh] overflow-hidden">
+                  <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-full object-cover" style={{ filter: "brightness(0.82)" }} />
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 22%, rgba(0,0,0,0.72) 100%), linear-gradient(135deg, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}1c, transparent 62%)` }} />
+                </div>
+
+                <div className="relative p-5 sm:p-7" style={{ background: "linear-gradient(130deg, rgba(8,9,22,0.96), rgba(19,16,48,0.94) 46%, rgba(12,14,34,0.95))" }}>
+                  <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-2">{selectedProject.title}</h2>
+                  <p className="text-base sm:text-lg text-white/65 max-w-4xl">{selectedProject.description}</p>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {selectedProject.technologies.slice(0, 6).map((tech) => (
+                      <span
+                        key={tech}
+                        className="px-3 py-1 rounded-full text-xs font-mono"
+                        style={{
+                          color: ACCENT_MAP[selectedProject.id] || "#7c5cfc",
+                          border: `1px solid ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}32`,
+                          background: `${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}14`,
+                        }}
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <button onClick={handleBackToCard} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-white/85 hover:text-white" style={{ borderColor: "rgba(255,255,255,0.25)" }}>
+                      <ArrowLeft className="w-4 h-4" />
+                      Back To Card
+                    </button>
+                    {selectedProject.link && (
+                      <a
+                        href={selectedProject.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold"
+                        style={{
+                          background: `linear-gradient(135deg, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}cc)`,
+                          color: "#04040a",
+                        }}
+                      >
+                        Visit Live
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+
+                  <div
+                    className="mt-5 inline-flex items-center gap-2 text-xs font-mono tracking-wider uppercase transition-all duration-500"
+                    style={{
+                      opacity: detailLoadStep === 0 ? 0.75 : 0,
+                      transform: detailLoadStep === 0 ? "translateY(0px)" : "translateY(-8px)",
+                      color: "rgba(255,255,255,0.55)",
+                    }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: ACCENT_MAP[selectedProject.id] || "#7c5cfc" }} />
+                    Scroll to load details
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="max-w-6xl mx-auto mt-8 pb-16 transition-all duration-700"
+                style={{
+                  opacity: detailLoadStep >= 1 ? 1 : 0,
+                  transform: detailLoadStep >= 1 ? "translateY(0px)" : "translateY(40px)",
+                }}
+              >
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <section className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6">
+                    <h3 className="text-lg font-bold mb-3">Overview</h3>
+                    <p className="text-muted-foreground leading-relaxed">{selectedProject.details.overview}</p>
+                  </section>
+
+                  <section className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 lg:col-span-2">
+                    <h3 className="text-lg font-bold mb-3">Key Features</h3>
+                    <ul className="space-y-2 text-muted-foreground">
+                      {selectedProject.details.features.map((feature, i) => (
+                        <li key={i}>- {feature}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+
+                <section
+                  className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 mt-6 transition-all duration-700"
+                  style={{
+                    opacity: detailLoadStep >= 2 ? 1 : 0,
+                    transform: detailLoadStep >= 2 ? "translateY(0px)" : "translateY(34px)",
+                  }}
+                >
+                  <h3 className="text-lg font-bold mb-3">Tech Stack</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.details.technologies.map((tech) => (
+                      <span key={tech} className="px-3 py-1 rounded-full text-sm border border-border bg-background/60">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+
+                <section
+                  className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 mt-6 transition-all duration-700"
+                  style={{
+                    opacity: detailLoadStep >= 3 ? 1 : 0,
+                    transform: detailLoadStep >= 3 ? "translateY(0px)" : "translateY(34px)",
+                  }}
+                >
+                  <h3 className="text-lg font-bold mb-3">Impact</h3>
+                  <p className="text-muted-foreground leading-relaxed">{selectedProject.details.content}</p>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
