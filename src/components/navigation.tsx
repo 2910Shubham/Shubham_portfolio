@@ -74,19 +74,38 @@ function DockItem({
 }
 
 export default function Navigation() {
+  const getInitialIsDark = () => {
+    if (typeof document === "undefined") return true;
+    const htmlIsDark = document.documentElement.classList.contains("dark");
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") return true;
+      if (saved === "light") return false;
+    } catch {
+      // Ignore storage errors and fall back to current DOM theme.
+    }
+    return htmlIsDark;
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(getInitialIsDark);
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
   const mouseX = useMotionValue(-1000);
   const switchAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") || "dark";
-    setIsDark(saved === "dark");
-    if (saved === "dark") document.documentElement.classList.add("dark");
-  }, []);
+    try {
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    } catch {
+      // Ignore storage errors.
+    }
+    document.documentElement.classList.toggle("dark", isDark);
+    if (!isDark) {
+      document.documentElement.classList.remove("cyber");
+    }
+  }, [isDark]);
 
   useEffect(() => {
     const audio = new Audio(encodeURI("/video/switchSound.mp3"));
@@ -106,6 +125,7 @@ export default function Navigation() {
   // Watch for external theme changes
   useEffect(() => {
     const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
     const obs = new MutationObserver(check);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => obs.disconnect();
@@ -120,15 +140,7 @@ export default function Navigation() {
       });
     }
 
-    const newDark = !isDark;
-    setIsDark(newDark);
-    localStorage.setItem("theme", newDark ? "dark" : "light");
-    if (newDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.remove("cyber");
-    }
+    setIsDark((prev) => !prev);
   };
 
   useEffect(() => {
@@ -224,7 +236,7 @@ export default function Navigation() {
                 style={{ color: socialDim }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = socialHover; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = socialDim; }}>
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={isDark ? "sun" : "moon"}
                     initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
                     exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
