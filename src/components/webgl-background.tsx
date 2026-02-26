@@ -179,7 +179,66 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
   const ripplesRef = useRef<{ x: number; y: number; time: number }[]>([]);
   const startTimeRef = useRef(performance.now() / 1000);
   const rafRef = useRef(0);
+  const toneModuleRef = useRef<any>(null);
+  const boomPlayerRef = useRef<any>(null);
+  const boomBusRef = useRef<any>(null);
+  const boomReadyRef = useRef(false);
+  const lastBoomAtRef = useRef(0);
+  useEffect(() => {
+    let disposed = false;
 
+    const setupBoom = async () => {
+      try {
+        const Tone = await import("tone");
+        if (disposed) return;
+
+        const filter = new Tone.Filter(1800, "lowpass");
+        const compressor = new Tone.Compressor(-22, 3);
+        const limiter = new Tone.Limiter(-1);
+        const gain = new Tone.Gain(0.0);
+
+        filter.connect(compressor);
+        compressor.connect(limiter);
+        limiter.connect(gain);
+        gain.toDestination();
+
+        const player = new Tone.Player({
+          url: encodeURI("/video/Boom 1.mp3"),
+          autostart: false,
+          fadeIn: 0.01,
+          fadeOut: 0.28,
+        }).connect(filter);
+
+        toneModuleRef.current = Tone;
+        boomBusRef.current = { filter, compressor, limiter, gain };
+        boomPlayerRef.current = player;
+        boomReadyRef.current = true;
+      } catch (error) {
+        console.warn("Boom sound init failed:", error);
+      }
+    };
+
+    setupBoom();
+
+    return () => {
+      disposed = true;
+      boomReadyRef.current = false;
+
+      try { boomPlayerRef.current?.dispose?.(); } catch {}
+      boomPlayerRef.current = null;
+
+      const bus = boomBusRef.current;
+      if (bus) {
+        try { bus.filter?.dispose?.(); } catch {}
+        try { bus.compressor?.dispose?.(); } catch {}
+        try { bus.limiter?.dispose?.(); } catch {}
+        try { bus.gain?.dispose?.(); } catch {}
+      }
+
+      boomBusRef.current = null;
+      toneModuleRef.current = null;
+    };
+  }, []);
   const initGL = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return false;
@@ -257,6 +316,39 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
         time: now,
       });
       if (ripplesRef.current.length > 5) ripplesRef.current.shift();
+
+      if (!isDark || !boomReadyRef.current) return;
+
+      const clickMs = performance.now();
+      if (clickMs - lastBoomAtRef.current < 80) return;
+      lastBoomAtRef.current = clickMs;
+
+      const Tone = toneModuleRef.current;
+      const bus = boomBusRef.current;
+      const player = boomPlayerRef.current;
+      if (!Tone || !bus?.gain || !player) return;
+
+      void Tone.start()
+        .then(() => {
+          const startAt = Tone.now();
+          const peakGain = 0.42;
+          const tailGain = 0.22;
+          const nextVolumeDb = -17 + Math.random() * 2;
+
+          player.playbackRate = 0.96 + Math.random() * 0.05;
+          player.volume.rampTo(nextVolumeDb, 0.04);
+
+          bus.gain.gain.cancelAndHoldAtTime(startAt);
+          bus.gain.gain.setValueAtTime(0.0, startAt);
+          bus.gain.gain.linearRampToValueAtTime(peakGain, startAt + 0.03);
+          bus.gain.gain.exponentialRampToValueAtTime(tailGain, startAt + 0.28);
+
+          player.stop(startAt);
+          player.start(startAt + 0.005);
+        })
+        .catch(() => {
+          // Ignore gesture/init races.
+        });
     };
     window.addEventListener("click", onClick);
 
@@ -297,3 +389,6 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
     />
   );
 }
+
+
+
