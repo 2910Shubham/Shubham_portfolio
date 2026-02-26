@@ -320,6 +320,7 @@ export function useScrollReveal(
         rootMargin?: string;
     }
 ) {
+    void controls;
     const elRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {

@@ -1,6 +1,7 @@
 import { motion, useInView } from "framer-motion";
 import { ExternalLink, ArrowLeft, ArrowRight, Sparkles, Layers, Zap, Globe, Smartphone, Brain, X } from "lucide-react";
 import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
+import type { ReactNode } from "react";
 import { gsap } from "gsap";
 import CinematicWarpOverlay from "@/components/cinematic-warp-overlay";
 import { PROJECTS, type Project } from "@/data/projects";
@@ -14,7 +15,7 @@ const ACCENT_MAP: Record<string, string> = {
   "green-island-uhi": "#2ecc71",
 };
 
-const CATEGORY_ICONS: Record<string, JSX.Element> = {
+const CATEGORY_ICONS: Record<string, ReactNode> = {
   "Mobile App": <Smartphone className="w-3.5 h-3.5" />,
   "E-Commerce": <Globe className="w-3.5 h-3.5" />,
   "Marketplace": <Layers className="w-3.5 h-3.5" />,
@@ -492,7 +493,7 @@ export default function ProjectsSection() {
           ref={detailPanelRef}
           className="fixed inset-0 z-[9995]"
           style={{
-            background: "rgba(10,10,18,0.98)",
+            background: isDark ? "rgba(10,10,18,0.98)" : "rgba(245,240,232,0.96)",
             backdropFilter: "blur(14px)",
           }}
         >
@@ -511,26 +512,30 @@ export default function ProjectsSection() {
                 style={{
                   borderColor: `${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}40`,
                   boxShadow: `0 0 0 1px ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}20, 0 40px 100px -24px ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}30`,
-                  background: "rgba(10,10,18,0.94)",
+                  background: isDark ? "rgba(10,10,18,0.94)" : "rgba(255,255,255,0.88)",
                 }}
               >
                 <button
                   onClick={handleBackToCard}
-                  className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center border text-white/80 hover:text-white transition-colors"
-                  style={{ borderColor: "rgba(255,255,255,0.24)", background: "rgba(0,0,0,0.35)" }}
+                  className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
+                  style={{
+                    borderColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(13,11,26,0.2)",
+                    background: isDark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.75)",
+                    color: isDark ? "rgba(255,255,255,0.82)" : "rgba(13,11,26,0.72)",
+                  }}
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
                 <div className="relative h-[52vh] sm:h-[58vh] overflow-hidden">
-                  <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-full object-cover" style={{ filter: "brightness(0.82)" }} />
-                  <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 22%, rgba(0,0,0,0.72) 100%), linear-gradient(135deg, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}1c, transparent 62%)` }} />
+                  <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-full object-cover" style={{ filter: isDark ? "brightness(0.82)" : "brightness(0.94)" }} />
+                  <div className="absolute inset-0" style={{ background: isDark ? `linear-gradient(180deg, transparent 22%, rgba(0,0,0,0.72) 100%), linear-gradient(135deg, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}1c, transparent 62%)` : `linear-gradient(180deg, transparent 22%, rgba(245,240,232,0.66) 100%), linear-gradient(135deg, ${(ACCENT_MAP[selectedProject.id] || "#7c5cfc")}16, transparent 62%)` }} />
                 </div>
 
-                <div className="relative p-5 sm:p-7" style={{ background: "linear-gradient(130deg, rgba(8,9,22,0.96), rgba(19,16,48,0.94) 46%, rgba(12,14,34,0.95))" }}>
-                  <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-2">{selectedProject.title}</h2>
-                  <p className="text-base sm:text-lg text-white/65 max-w-4xl">{selectedProject.description}</p>
+                <div className="relative p-5 sm:p-7" style={{ background: isDark ? "linear-gradient(130deg, rgba(8,9,22,0.96), rgba(19,16,48,0.94) 46%, rgba(12,14,34,0.95))" : "linear-gradient(130deg, rgba(255,255,255,0.88), rgba(245,240,232,0.96) 46%, rgba(237,232,220,0.96))" }}>
+                  <h2 className="text-2xl sm:text-4xl font-black leading-tight mb-2" style={{ color: isDark ? "#ffffff" : "var(--li-text)" }}>{selectedProject.title}</h2>
+                  <p className="text-base sm:text-lg max-w-4xl" style={{ color: isDark ? "rgba(255,255,255,0.65)" : "var(--li-text-dim)" }}>{selectedProject.description}</p>
 
                   <div className="mt-5 flex flex-wrap gap-2">
                     {selectedProject.technologies.slice(0, 6).map((tech) => (
@@ -549,7 +554,7 @@ export default function ProjectsSection() {
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <button onClick={handleBackToCard} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-white/85 hover:text-white" style={{ borderColor: "rgba(255,255,255,0.25)" }}>
+                    <button onClick={handleBackToCard} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border" style={{ borderColor: isDark ? "rgba(255,255,255,0.25)" : "rgba(13,11,26,0.2)", color: isDark ? "rgba(255,255,255,0.86)" : "var(--li-text)" }}>
                       <ArrowLeft className="w-4 h-4" />
                       Back To Card
                     </button>
@@ -575,7 +580,7 @@ export default function ProjectsSection() {
                     style={{
                       opacity: detailLoadStep === 0 ? 0.75 : 0,
                       transform: detailLoadStep === 0 ? "translateY(0px)" : "translateY(-8px)",
-                      color: "rgba(255,255,255,0.55)",
+                      color: isDark ? "rgba(255,255,255,0.55)" : "rgba(13,11,26,0.55)",
                     }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: ACCENT_MAP[selectedProject.id] || "#7c5cfc" }} />

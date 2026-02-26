@@ -75,9 +75,9 @@ export default function CinematicWarpOverlay({
   zIndex = 9996,
 }: CinematicWarpOverlayProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const rendererRef = useRef<any>(null);
   const uniformsRef = useRef<{
-    uResolution: { value: THREE.Vector2 };
+    uResolution: { value: any };
     uTime: { value: number };
     uProgress: { value: number };
   } | null>(null);
@@ -175,4 +175,3 @@ export default function CinematicWarpOverlay({
     />
   );
 }
-
