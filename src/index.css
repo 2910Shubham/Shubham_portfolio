@@ -122,12 +122,12 @@
 
 @layer components {
   .glass-effect {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.85);
   }
 
   .dark .glass-effect {
-    background: rgba(20, 28, 63, 0.95);
+    background: rgba(20, 28, 63, 0.85);
   }
 
   .gradient-text {

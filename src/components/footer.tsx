@@ -1,113 +1,120 @@
-import { Github, Linkedin, Mail, ExternalLink, Heart } from "lucide-react";
+import { Github, Linkedin, Mail, Twitter } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Footer() {
-  const socialLinks = [
-    {
-      icon: Github,
-      href: "https://github.com/2910Shubham",
-      label: "GitHub",
-    },
-    {
-      icon: Linkedin,
-      href: "https://www.linkedin.com/in/shubham-kumar-mishra-/",
-      label: "LinkedIn",
-    },
-    {
-      icon: Mail,
-      href: "mailto:2910viwan@gmail.com",
-      label: "Email",
-    },
-  ];
-
-  const footerLinks = [
-    { label: "Home", href: "/" },
-    { label: "About", href: "#about" },
-    { label: "Projects", href: "#projects" },
-    { label: "Green Island", href: "/green-island" },
-  ];
-
   const currentYear = new Date().getFullYear();
 
+  const linkColumns = [
+    {
+      links: [
+        { label: "Home", href: "#hero" },
+        { label: "About", href: "#about" },
+        { label: "Skills", href: "#skills" },
+        { label: "Projects", href: "#projects" },
+        { label: "Contact", href: "#contact" },
+      ],
+    },
+    {
+      links: [
+        { label: "GitHub", href: "https://github.com/2910Shubham", external: true },
+        { label: "LinkedIn", href: "https://www.linkedin.com/in/shubham-kumar-mishra-/", external: true },
+        { label: "Email", href: "mailto:2910viwan@gmail.com" },
+        { label: "Resume", href: "#" },
+      ],
+    },
+    {
+      links: [
+        { label: "Green Island", href: "/green-island" },
+        { label: "Gallery", href: "#gallery" },
+        { label: "PuffNMore", href: "https://puffsnmore.com/", external: true },
+        { label: "Campus Kart", href: "https://campuskart.meetshubham.site/", external: true },
+      ],
+    },
+  ];
+
+  const socialLinks = [
+    { icon: Github, href: "https://github.com/2910Shubham", label: "GitHub" },
+    { icon: Linkedin, href: "https://www.linkedin.com/in/shubham-kumar-mishra-/", label: "LinkedIn" },
+    { icon: Mail, href: "mailto:2910viwan@gmail.com", label: "Email" },
+    { icon: Twitter, href: "#", label: "Twitter" },
+  ];
+
   return (
-    <footer className="relative bg-gradient-to-t from-slate-950 via-slate-900 to-slate-900 border-t border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Main Content */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-          {/* Brand Section */}
-          <div className="flex flex-col">
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Shubham Kumar Mishra
-            </h3>
-            <p className="text-slate-400 mb-4">
-              Full Stack Developer & Builder
+    <footer className="relative bg-background border-t border-border overflow-hidden">
+      {/* Top section */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 pt-20 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_1fr] gap-12 md:gap-8">
+          {/* Left — tagline */}
+          <div>
+            <p className="text-xl sm:text-2xl font-medium text-foreground leading-snug">
+              Full Stack Web<br />Developer
             </p>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Crafting modern web experiences with clean code and creative solutions. Always learning, always building.
-            </p>
-          </div>
-
-          {/* Quick Links */}
-          <div className="flex flex-col">
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-6">
-              Navigation
-            </h4>
-            <nav className="flex flex-col space-y-3">
-              {footerLinks.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.href}
-                  className="text-slate-400 hover:text-white transition-colors duration-300 text-sm flex items-center group"
-                >
-                  {link.label}
-                  <ExternalLink className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </a>
-              ))}
-            </nav>
-          </div>
-
-          {/* Social Links */}
-          <div className="flex flex-col">
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-6">
-              Connect
-            </h4>
-            <div className="flex flex-wrap gap-3">
-              {socialLinks.map((link, index) => {
-                const IconComponent = link.icon;
+            <div className="flex gap-3 mt-8">
+              {socialLinks.map((s, i) => {
+                const Icon = s.icon;
                 return (
                   <a
-                    key={index}
-                    href={link.href}
-                    aria-label={link.label}
-                    target="_blank"
+                    key={i}
+                    href={s.href}
+                    target={s.href.startsWith("http") ? "_blank" : undefined}
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white transition-all duration-300 hover:scale-110 border border-slate-700 hover:border-blue-500 group"
+                    aria-label={s.label}
+                    className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-all duration-300"
                   >
-                    <IconComponent className="w-5 h-5" />
+                    <Icon className="w-4 h-4" />
                   </a>
                 );
               })}
             </div>
           </div>
-        </div>
 
-        {/* Divider */}
-        <div className="border-t border-slate-800 my-8"></div>
-
-        {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-slate-500 text-sm flex items-center gap-1">
-            Made with
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            by Shubham &bull; {currentYear}
-          </p>
-          <p className="text-slate-600 text-sm">
-            © {currentYear} All rights reserved.
-          </p>
+          {/* Link columns */}
+          {linkColumns.map((col, ci) => (
+            <nav key={ci} className="flex flex-col gap-3">
+              {col.links.map((link, li) => (
+                <a
+                  key={li}
+                  href={link.href}
+                  target={link.external ? "_blank" : undefined}
+                  rel={link.external ? "noopener noreferrer" : undefined}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 w-fit"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          ))}
         </div>
       </div>
 
-      {/* Decorative background element */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -z-10"></div>
+      {/* Giant name */}
+      <div className="relative px-4 sm:px-6 overflow-hidden select-none">
+        <motion.h2
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
+          viewport={{ once: true }}
+          className="text-foreground font-black tracking-tighter leading-[0.85] text-center"
+          style={{
+            fontSize: "clamp(80px, 18vw, 280px)",
+            letterSpacing: "-0.04em",
+          }}
+        >
+          Shubham
+        </motion.h2>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-border">
+        <p className="text-xs text-muted-foreground">
+          © {currentYear} Shubham Kumar Mishra. All rights reserved.
+        </p>
+        <div className="flex items-center gap-6 text-xs text-muted-foreground">
+          <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
+          <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+          <span>Made with ❤️ in India</span>
+        </div>
+      </div>
     </footer>
   );
 }

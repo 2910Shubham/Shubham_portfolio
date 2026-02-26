@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import ThemeToggle from "./theme-toggle";
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,16 +61,16 @@ export default function Navigation() {
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className={`transition-colors duration-300 font-medium ${
-                    activeSection === item.id
+                  className={`transition-colors duration-300 font-medium ${activeSection === item.id
                       ? "text-primary"
                       : "text-foreground hover:text-primary"
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
+            <ThemeToggle />
           </div>
 
           {/* Mobile menu button */}
@@ -88,20 +89,22 @@ export default function Navigation() {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-border">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-background border-t border-border">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className={`block w-full text-left px-3 py-2 transition-colors duration-300 font-medium ${
-                    activeSection === item.id
+                  className={`block w-full text-left px-3 py-2 transition-colors duration-300 font-medium ${activeSection === item.id
                       ? "text-primary"
                       : "text-foreground hover:text-primary"
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </button>
               ))}
+              <div className="px-3 py-2">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         )}
