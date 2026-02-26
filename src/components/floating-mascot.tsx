@@ -25,12 +25,21 @@ const messages = [
     "Need a developer? Hire Shubham! 😎",
 ];
 
+const PROXIMITY_MESSAGES = [
+    "Hey! Wanna play? Catch me! 🏃‍♂️",
+    "Try to catch me! 😜",
+    "Come closer... or not! 🙈",
+    "You can't catch me! 🐱",
+];
+
 const FloatingMascot = memo(function FloatingMascot() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [showMessage, setShowMessage] = useState(false);
     const [message, setMessage] = useState(messages[0]);
     const [isDark, setIsDark] = useState(false);
     const msgTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasShownGreeting = useRef(false);
+    const proximityCooldown = useRef(false);
 
     const stateRef = useRef({
         mouseX: -1000,
@@ -44,6 +53,7 @@ const FloatingMascot = memo(function FloatingMascot() {
         tiltX: 0,
         fleeX: 0, // extra displacement from click-to-flee
         fleeY: 0,
+        isNearby: false, // tracks if cursor is near the mascot
     });
     const rafRef = useRef(0);
 
@@ -55,6 +65,31 @@ const FloatingMascot = memo(function FloatingMascot() {
         obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
         return () => obs.disconnect();
     }, []);
+
+    // Show greeting message on page load
+    useEffect(() => {
+        if (hasShownGreeting.current) return;
+        hasShownGreeting.current = true;
+        const timer = setTimeout(() => {
+            setMessage("Hey there! 👋 Hire Shubham — he builds amazing things! 🚀");
+            setShowMessage(true);
+            msgTimeoutRef.current = setTimeout(() => setShowMessage(false), 4000);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Show proximity message function
+    const showProximityMessage = () => {
+        if (proximityCooldown.current || showMessage) return;
+        proximityCooldown.current = true;
+        const msg = PROXIMITY_MESSAGES[Math.floor(Math.random() * PROXIMITY_MESSAGES.length)];
+        setMessage(msg);
+        setShowMessage(true);
+        if (msgTimeoutRef.current) clearTimeout(msgTimeoutRef.current);
+        msgTimeoutRef.current = setTimeout(() => setShowMessage(false), 2000);
+        // Cooldown: don't spam proximity messages
+        setTimeout(() => { proximityCooldown.current = false; }, 6000);
+    };
 
     // Click handler — flee + show message
     const handleClick = () => {
@@ -129,22 +164,32 @@ const FloatingMascot = memo(function FloatingMascot() {
             const baseX = heroX + p * (floatX - heroX);
             const baseY = heroY + p * (floatY - heroY);
 
-            // ─── Mouse avoidance (shy behavior) ───
+            // ─── Mouse avoidance (shy behavior) — works everywhere ───
             const dx = s.mouseX - baseX;
             const dy = s.mouseY - baseY;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            const avoidRadius = 180;
-            const pushStrength = 100 * p; // Only avoid when floating
+            const avoidRadius = 280;
+            // Shy everywhere: noticeable on hero (80), very strong when floating (200)
+            const pushStrength = 80 + p * 120;
 
-            if (dist < avoidRadius && dist > 0 && p > 0.3) {
+            if (dist < avoidRadius && dist > 0) {
                 const force = (1 - dist / avoidRadius) * pushStrength;
                 const angle = Math.atan2(dy, dx);
                 s.pushX += (-Math.cos(angle) * force - s.pushX) * 0.06;
                 s.pushY += (-Math.sin(angle) * force - s.pushY) * 0.06;
+
+                // Trigger proximity message when cursor gets close
+                if (!s.isNearby && dist < 150) {
+                    s.isNearby = true;
+                    showProximityMessage();
+                }
             } else {
                 s.pushX *= 0.93;
                 s.pushY *= 0.93;
+                if (dist > avoidRadius + 50) {
+                    s.isNearby = false;
+                }
             }
 
             if (Math.abs(s.pushX) < 0.1) s.pushX = 0;

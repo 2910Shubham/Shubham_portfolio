@@ -46,6 +46,19 @@ const STATUS_MAP: Record<string, { text: string; color: string }> = {
   "green-island-uhi": { text: "Research", color: "#7c5cfc" },
 };
 
+/* ────── Theme hook ────── */
+function useTheme() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
+
 /* ────── Bento Card Component ────── */
 function BentoCard({
   project,
@@ -64,6 +77,7 @@ function BentoCard({
   const accent = ACCENT_MAP[project.id] || "#7c5cfc";
   const status = STATUS_MAP[project.id];
   const catIcon = CATEGORY_ICONS[project.category];
+  const isDark = useTheme();
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const rect = cardRef.current?.getBoundingClientRect();
@@ -103,11 +117,11 @@ function BentoCard({
       <div
         className="relative h-full rounded-[20px] overflow-hidden transition-all duration-500"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: `1px solid ${hovered ? `${accent}50` : "rgba(255,255,255,0.06)"}`,
+          background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.85)",
+          border: `1px solid ${hovered ? `${accent}50` : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"}`,
           boxShadow: hovered
-            ? `0 0 0 1px ${accent}22, 0 20px 60px -10px ${accent}20, 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)`
-            : `0 2px 20px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.04)`,
+            ? `0 0 0 1px ${accent}22, 0 20px 60px -10px ${accent}20, 0 4px 20px rgba(0,0,0,${isDark ? '0.3' : '0.08'}), inset 0 1px 0 ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)'}`
+            : `0 2px 20px rgba(0,0,0,${isDark ? '0.1' : '0.04'}), inset 0 1px 0 ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)'}`,
         }}
       >
         {/* Spotlight gradient following cursor */}
@@ -178,9 +192,9 @@ function BentoCard({
           <div
             className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl text-[11px] font-mono font-bold transition-all duration-300"
             style={{
-              background: hovered ? `${accent}30` : "rgba(255,255,255,0.08)",
-              color: hovered ? accent : "rgba(255,255,255,0.4)",
-              border: `1px solid ${hovered ? `${accent}40` : "rgba(255,255,255,0.08)"}`,
+              background: hovered ? `${accent}30` : isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.6)",
+              color: hovered ? accent : isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
+              border: `1px solid ${hovered ? `${accent}40` : isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
             }}
           >
             {String(index + 1).padStart(2, "0")}
@@ -221,9 +235,10 @@ function BentoCard({
 
           <div className="flex-1">
             <h3
-              className="font-bold text-white mb-2 leading-tight transition-colors duration-300"
+              className="font-bold mb-2 leading-tight transition-colors duration-300"
               style={{
                 fontSize: size === "large" ? "1.4rem" : size === "medium" ? "1.15rem" : "1rem",
+                color: isDark ? "#fff" : "#0D0B1A",
               }}
             >
               {project.title}
@@ -231,7 +246,7 @@ function BentoCard({
             <p
               className="text-sm leading-relaxed transition-all duration-300"
               style={{
-                color: "rgba(255,255,255,0.45)",
+                color: isDark ? "rgba(255,255,255,0.45)" : "rgba(13,11,26,0.55)",
                 display: size === "small" ? "-webkit-box" : undefined,
                 WebkitLineClamp: size === "small" ? 2 : undefined,
                 WebkitBoxOrient: size === "small" ? "vertical" : undefined,
@@ -249,9 +264,9 @@ function BentoCard({
                 key={tech}
                 className="text-[10px] font-mono px-2 py-0.5 rounded-md transition-all duration-300"
                 style={{
-                  background: hovered ? `${accent}15` : "rgba(255,255,255,0.05)",
-                  color: hovered ? accent : "rgba(255,255,255,0.35)",
-                  border: `1px solid ${hovered ? `${accent}25` : "rgba(255,255,255,0.06)"}`,
+                  background: hovered ? `${accent}15` : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
+                  color: hovered ? accent : isDark ? "rgba(255,255,255,0.35)" : "rgba(13,11,26,0.45)",
+                  border: `1px solid ${hovered ? `${accent}25` : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
                   transitionDelay: `${ti * 40}ms`,
                 }}
               >
@@ -259,7 +274,7 @@ function BentoCard({
               </span>
             ))}
             {project.technologies.length > (size === "large" ? 5 : 3) && (
-              <span className="text-[10px] font-mono px-2 py-0.5 text-white/20">
+              <span className="text-[10px] font-mono px-2 py-0.5" style={{ color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.25)' }}>
                 +{project.technologies.length - (size === "large" ? 5 : 3)}
               </span>
             )}
@@ -269,7 +284,7 @@ function BentoCard({
           <div className="flex items-center justify-between mt-auto">
             <span
               className="flex items-center gap-2 text-xs font-medium transition-all duration-300"
-              style={{ color: hovered ? accent : "rgba(255,255,255,0.3)" }}
+              style={{ color: hovered ? accent : isDark ? "rgba(255,255,255,0.3)" : "rgba(13,11,26,0.35)" }}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full transition-all duration-500"
@@ -294,7 +309,7 @@ function BentoCard({
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg transition-all duration-300"
                 style={{
-                  color: hovered ? accent : "rgba(255,255,255,0.25)",
+                  color: hovered ? accent : isDark ? "rgba(255,255,255,0.25)" : "rgba(13,11,26,0.3)",
                   background: hovered ? `${accent}10` : "transparent",
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -854,7 +869,8 @@ export default function ProjectsSection({
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4"
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: "var(--li-text)" }}
             >
               Featured Projects
             </motion.h2>
@@ -874,7 +890,7 @@ export default function ProjectsSection({
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.4 }}
               className="mt-6 max-w-3xl mx-auto text-lg"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "var(--li-text-dim)" }}
             >
               Production-grade applications with measurable impact. Mobile-first architecture,
               AI/ML integration, and data engineering at scale.
