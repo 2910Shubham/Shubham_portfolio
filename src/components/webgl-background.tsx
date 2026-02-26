@@ -35,9 +35,6 @@ const FRAG = `
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
-  float hash21(vec2 p) {
-    return fract(sin(dot(p, vec2(41.1, 289.7))) * 18756.34);
-  }
 
   float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
@@ -60,156 +57,58 @@ const FRAG = `
     return v;
   }
 
-  // ─── Voronoi for caustic patterns ───
-  float voronoi(vec2 p) {
-    vec2 g = floor(p), f = fract(p);
-    float d = 1.0;
-    for (int y = -1; y <= 1; y++)
-    for (int x = -1; x <= 1; x++) {
-      vec2 o = vec2(float(x), float(y));
-      vec2 r = o + hash(g + o) * 0.8 + 0.1 - f;
-      d = min(d, dot(r, r));
-    }
-    return sqrt(d);
-  }
-
-  // ─── Caustic light pattern ───
-  float caustic(vec2 p, float t) {
-    float c1 = voronoi(p * 4.0 + vec2(t * 0.3, t * 0.2));
-    float c2 = voronoi(p * 5.5 + vec2(-t * 0.15, t * 0.35));
-    return pow(1.0 - c1, 2.0) * pow(1.0 - c2, 2.0) * 4.0;
-  }
-
-  // ─── Light rays from above ───
-  float lightRays(vec2 uv, float t) {
-    float rays = 0.0;
-    for (int i = 0; i < 3; i++) {
-      float fi = float(i);
-      float x = uv.x + sin(t * 0.2 + fi * 2.1) * 0.3;
-      float ray = smoothstep(0.08, 0.0, abs(x - 0.3 - fi * 0.2));
-      ray *= smoothstep(0.0, 0.8, uv.y); // stronger from top
-      rays += ray * 0.15;
-    }
-    return rays;
-  }
-
-  // ─── Floating particles (bubbles / plankton) ───
-  float particles(vec2 uv, float t, float density) {
-    float p = 0.0;
-    for (int i = 0; i < 15; i++) {
-      float fi = float(i);
-      vec2 pos = vec2(
-        hash(vec2(fi, 0.0)),
-        fract(hash(vec2(fi, 1.0)) + t * (0.02 + hash(vec2(fi, 2.0)) * 0.03))
-      );
-      float size = 0.002 + hash(vec2(fi, 3.0)) * 0.003;
-      float d = distance(uv, pos);
-      p += smoothstep(size, size * 0.3, d) * density;
-    }
-    return p;
-  }
-
   void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
     float aspect = u_resolution.x / u_resolution.y;
     vec2 st = vec2(uv.x * aspect, uv.y);
     float t = u_time;
-    float depth = u_scroll; // 0 = surface, 1 = abyss
 
     // ════════════════════════════════════════
-    //  OCEAN DEPTH COLORS
+    //  VOID BASE — #050508
     // ════════════════════════════════════════
-
-    // Surface (0.0) → warm turquoise
-    vec3 surfaceTop    = vec3(0.00, 0.55, 0.65);
-    vec3 surfaceBottom = vec3(0.00, 0.35, 0.50);
-
-    // Shallow (0.3) → medium ocean blue
-    vec3 shallowTop    = vec3(0.00, 0.30, 0.50);
-    vec3 shallowBottom = vec3(0.00, 0.18, 0.38);
-
-    // Twilight (0.6) → dark navy
-    vec3 twilightTop    = vec3(0.00, 0.10, 0.25);
-    vec3 twilightBottom = vec3(0.00, 0.05, 0.15);
-
-    // Abyss (1.0) → near-black
-    vec3 abyssTop    = vec3(0.01, 0.02, 0.08);
-    vec3 abyssBottom = vec3(0.00, 0.01, 0.04);
-
-    // Blend zone colors based on depth
-    vec3 topColor, bottomColor;
-    if (depth < 0.33) {
-      float t2 = depth / 0.33;
-      topColor    = mix(surfaceTop, shallowTop, t2);
-      bottomColor = mix(surfaceBottom, shallowBottom, t2);
-    } else if (depth < 0.66) {
-      float t2 = (depth - 0.33) / 0.33;
-      topColor    = mix(shallowTop, twilightTop, t2);
-      bottomColor = mix(shallowBottom, twilightBottom, t2);
-    } else {
-      float t2 = (depth - 0.66) / 0.34;
-      topColor    = mix(twilightTop, abyssTop, t2);
-      bottomColor = mix(twilightBottom, abyssBottom, t2);
-    }
-
-    vec3 color = mix(bottomColor, topColor, uv.y);
+    vec3 voidBlack = vec3(0.02, 0.02, 0.03);
+    vec3 color = voidBlack;
 
     // ════════════════════════════════════════
-    //  CAUSTIC LIGHT (fades with depth)
+    //  MOUSE WARP — cursor warps noise locally
     // ════════════════════════════════════════
-
-    float causticIntensity = smoothstep(0.6, 0.0, depth);
-    float caust = caustic(st, t);
-    color += caust * causticIntensity * vec3(0.05, 0.12, 0.10);
-
-    // ════════════════════════════════════════
-    //  LIGHT RAYS (visible only near surface)
-    // ════════════════════════════════════════
-
-    float rayIntensity = smoothstep(0.4, 0.0, depth);
-    float rays = lightRays(uv, t);
-    color += rays * rayIntensity * vec3(0.15, 0.25, 0.20);
-
-    // ════════════════════════════════════════
-    //  UNDERWATER CURRENT (noise distortion)
-    // ════════════════════════════════════════
-
-    float currentNoise = fbm(st * 2.0 + vec2(t * 0.1, t * 0.05));
-    color += currentNoise * 0.015 * (1.0 - depth * 0.5);
-
-    // ════════════════════════════════════════
-    //  PARTICLES — bubbles near surface, bioluminescence in deep
-    // ════════════════════════════════════════
-
-    // Bubbles (surface to mid)
-    float bubbleDensity = smoothstep(0.7, 0.0, depth) * 0.6;
-    float bubbles = particles(uv, t, bubbleDensity);
-    color += bubbles * vec3(0.3, 0.5, 0.5);
-
-    // Bioluminescence (deep only)
-    float bioDepth = smoothstep(0.5, 0.9, depth);
-    float biolum = particles(uv * 1.5 + 0.5, t * 0.5, bioDepth * 0.8);
-    color += biolum * vec3(0.1, 0.4, 0.6);
-
-    // Occasional bright bioluminescent flashes
-    float flash = hash(floor(st * 20.0 + floor(t * 0.3)));
-    flash = step(0.997, flash) * bioDepth;
-    color += flash * vec3(0.0, 0.5, 0.8) * (sin(t * 3.0 + flash * 100.0) * 0.5 + 0.5);
-
-    // ════════════════════════════════════════
-    //  MOUSE — underwater glow
-    // ════════════════════════════════════════
-
     vec2 mouseUV = vec2(u_mouse.x * aspect, u_mouse.y);
     float md = distance(st, mouseUV);
+    vec2 warp = st;
+    float warpStr = smoothstep(0.4, 0.0, md) * 0.15;
+    warp += normalize(st - mouseUV + 0.001) * warpStr;
+
+    // ════════════════════════════════════════
+    //  LAYER 1: Deep purple fluid blobs
+    // ════════════════════════════════════════
+    float n1 = fbm(warp * 2.0 + vec2(t * 0.05, t * 0.03));
+    vec3 purple = vec3(0.18, 0.10, 0.55);
+    color += purple * n1 * 0.45;
+
+    // ════════════════════════════════════════
+    //  LAYER 2: Electric indigo streaks
+    // ════════════════════════════════════════
+    float n2 = fbm(warp * 3.5 + vec2(-t * 0.07, t * 0.04));
+    vec3 indigo = vec3(0.31, 0.28, 0.90);
+    color += indigo * n2 * 0.25;
+
+    // ════════════════════════════════════════
+    //  LAYER 3: Sparse molten gold highlights
+    // ════════════════════════════════════════
+    float n3 = fbm(warp * 4.0 + vec2(t * 0.03, -t * 0.06));
+    float goldMask = smoothstep(0.72, 0.85, n3);
+    vec3 gold = vec3(0.96, 0.62, 0.04);
+    color += gold * goldMask * 0.35;
+
+    // ════════════════════════════════════════
+    //  MOUSE GLOW — soft light around cursor
+    // ════════════════════════════════════════
     float mouseGlow = smoothstep(0.5, 0.0, md);
-    vec3 glowColor = mix(vec3(0.05, 0.15, 0.12), vec3(0.02, 0.08, 0.15), depth);
-    color += mouseGlow * glowColor;
+    color += vec3(0.15, 0.12, 0.35) * mouseGlow * 0.4;
 
     // ════════════════════════════════════════
-    //  CLICK RIPPLES — bubble burst rings
+    //  CLICK RIPPLES
     // ════════════════════════════════════════
-
     for (int i = 0; i < MAX_RIPPLES; i++) {
       vec3 rp = u_ripples[i];
       if (rp.z > 0.0) {
@@ -221,49 +120,45 @@ const FRAG = `
           float ring = smoothstep(radius - 0.04, radius, d) *
                        smoothstep(radius + 0.04, radius, d);
           float fade = 1.0 - age / 3.0;
-          color += ring * fade * vec3(0.08, 0.18, 0.22);
-
-          // Inner bright bubble
-          float inner = smoothstep(0.05, 0.0, abs(d - radius * 0.3)) * fade;
-          color += inner * vec3(0.05, 0.12, 0.15) * 0.5;
+          color += ring * fade * vec3(0.20, 0.15, 0.50);
         }
       }
     }
 
     // ════════════════════════════════════════
-    //  LIGHT MODE — soft ocean tint
+    //  FLOATING PARTICLES (sparse)
     // ════════════════════════════════════════
+    for (int i = 0; i < 12; i++) {
+      float fi = float(i);
+      vec2 pos = vec2(
+        hash(vec2(fi, 0.0)),
+        fract(hash(vec2(fi, 1.0)) + t * (0.01 + hash(vec2(fi, 2.0)) * 0.015))
+      );
+      float size = 0.001 + hash(vec2(fi, 3.0)) * 0.002;
+      float d = distance(uv, pos);
+      float p = smoothstep(size, size * 0.2, d) * 0.4;
+      // Alternate between indigo and gold particles
+      vec3 pColor = mod(fi, 3.0) < 1.0 ? vec3(0.50, 0.45, 0.90) : vec3(0.96, 0.62, 0.04);
+      color += p * pColor;
+    }
 
+    // ════════════════════════════════════════
+    //  VIGNETTE — darken edges 40%
+    // ════════════════════════════════════════
+    float vignette = smoothstep(0.0, 0.7, distance(uv, vec2(0.5)));
+    color *= 1.0 - vignette * 0.4;
+
+    // ════════════════════════════════════════
+    //  LIGHT MODE — subtle indigo-tinted white
+    // ════════════════════════════════════════
     if (u_isDark < 0.5) {
-      // Light mode: subtle aqua-tinted white
-      vec3 lightSurface = vec3(0.92, 0.97, 0.98);
-      vec3 lightDeep = vec3(0.85, 0.92, 0.95);
-      vec3 lightColor = mix(lightSurface, lightDeep, depth);
-
-      // Add subtle caustic in light mode too
-      lightColor += caust * 0.02 * causticIntensity;
-      lightColor += currentNoise * 0.01;
-
-      // Mouse glow
-      lightColor += mouseGlow * 0.015;
-
-      // Click ripples
-      for (int i = 0; i < MAX_RIPPLES; i++) {
-        vec3 rp2 = u_ripples[i];
-        if (rp2.z > 0.0) {
-          float age2 = t - rp2.z;
-          if (age2 < 2.0) {
-            vec2 rc2 = vec2(rp2.x * aspect, rp2.y);
-            float d2 = distance(st, rc2);
-            float r2 = age2 * 0.5;
-            float ring2 = smoothstep(r2 - 0.04, r2, d2) *
-                          smoothstep(r2 + 0.04, r2, d2);
-            lightColor -= ring2 * (1.0 - age2 / 2.0) * 0.03;
-          }
-        }
-      }
-
-      gl_FragColor = vec4(lightColor, 1.0);
+      vec3 lightBase = vec3(0.94, 0.93, 0.97);
+      // Add very subtle fluid movement
+      lightBase -= n1 * 0.02 * vec3(0.01, 0.02, 0.05);
+      lightBase += n3 * goldMask * 0.015 * gold;
+      lightBase += mouseGlow * 0.01;
+      lightBase *= 1.0 - vignette * 0.08;
+      gl_FragColor = vec4(lightBase, 1.0);
       return;
     }
 

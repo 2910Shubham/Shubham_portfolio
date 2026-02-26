@@ -63,8 +63,8 @@ function DockItem({
           layoutId="nav-active"
           className="absolute inset-0 rounded-full"
           style={{
-            background: "linear-gradient(135deg, rgba(96,212,240,0.15), rgba(96,212,240,0.05))",
-            boxShadow: "0 0 20px rgba(96,212,240,0.08)",
+            background: "linear-gradient(135deg, rgba(79,70,229,0.2), rgba(79,70,229,0.06))",
+            boxShadow: "0 0 20px rgba(79,70,229,0.12)",
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         />
@@ -72,9 +72,10 @@ function DockItem({
 
       <span
         className={`relative z-10 text-[13px] font-medium tracking-wide transition-colors duration-300 ${isActive
-            ? "text-cyan-300"
-            : "text-white/45 group-hover:text-white/90"
+          ? "text-indigo-300"
+          : "text-white/45 group-hover:text-white/90"
           }`}
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
       >
         {item.label}
       </span>
@@ -83,8 +84,8 @@ function DockItem({
       {isActive && (
         <motion.div
           layoutId="nav-dot"
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400"
-          style={{ boxShadow: "0 0 6px 2px rgba(96,212,240,0.5)" }}
+          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+          style={{ background: "#F59E0B", boxShadow: "0 0 6px 2px rgba(245,158,11,0.5)" }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         />
       )}
@@ -159,7 +160,7 @@ export default function Navigation() {
           className="relative p-[1px] rounded-full overflow-hidden"
           style={{
             background: scrolled
-              ? "linear-gradient(135deg, rgba(96,212,240,0.3), rgba(96,212,240,0.05) 40%, rgba(255,255,255,0.08) 60%, rgba(96,212,240,0.2))"
+              ? "linear-gradient(135deg, rgba(79,70,229,0.35), rgba(245,158,11,0.08) 40%, rgba(255,255,255,0.06) 60%, rgba(79,70,229,0.25))"
               : "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
             transition: "background 0.5s ease",
           }}
@@ -181,8 +182,8 @@ export default function Navigation() {
               <motion.div
                 className="w-2.5 h-2.5 rounded-full"
                 style={{
-                  background: "linear-gradient(135deg, #60d4f0, #34d399)",
-                  boxShadow: "0 0 10px rgba(96,212,240,0.4)",
+                  background: "linear-gradient(135deg, #F59E0B, #818CF8)",
+                  boxShadow: "0 0 10px rgba(245,158,11,0.4)",
                 }}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -218,7 +219,7 @@ export default function Navigation() {
                   title={s.label}
                   whileHover={{ scale: 1.2, y: -2 }}
                   whileTap={{ scale: 0.9 }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/35 hover:text-cyan-300 transition-colors duration-300 relative group"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/35 hover:text-amber-400 transition-colors duration-300 relative group"
                 >
                   <s.icon className="w-3.5 h-3.5" />
                   {/* Tooltip */}
@@ -236,7 +237,7 @@ export default function Navigation() {
               onClick={toggleTheme}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-cyan-300 transition-colors duration-300 ml-0.5"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-amber-400 transition-colors duration-300 ml-0.5"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -277,8 +278,8 @@ export default function Navigation() {
             <div
               className="w-2.5 h-2.5 rounded-full"
               style={{
-                background: "linear-gradient(135deg, #60d4f0, #34d399)",
-                boxShadow: "0 0 8px rgba(96,212,240,0.4)",
+                background: "linear-gradient(135deg, #F59E0B, #818CF8)",
+                boxShadow: "0 0 8px rgba(245,158,11,0.4)",
               }}
             />
             <span className="text-sm font-bold text-white/90 tracking-widest font-mono">SM</span>
@@ -292,7 +293,7 @@ export default function Navigation() {
                 href={s.href}
                 target={s.href.startsWith("mailto") ? undefined : "_blank"}
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white/35 hover:text-cyan-300 transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white/35 hover:text-amber-400 transition-colors"
               >
                 <s.icon className="w-3.5 h-3.5" />
               </a>
@@ -335,12 +336,12 @@ export default function Navigation() {
                   transition={{ delay: i * 0.03 }}
                   onClick={() => scrollToSection(item.id)}
                   className={`w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 transition-colors duration-200 ${activeSection === item.id
-                      ? "text-cyan-400"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
+                    ? "text-indigo-400"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
                     }`}
                 >
                   {activeSection === item.id && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" style={{ boxShadow: "0 0 6px rgba(96,212,240,0.5)" }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 6px rgba(245,158,11,0.5)" }} />
                   )}
                   {item.label}
                 </motion.button>
