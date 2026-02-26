@@ -1,7 +1,6 @@
 import { Github, Linkedin, Mail, ArrowDown, MapPin, Sparkles } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { memo, useRef } from "react";
-import GreenScreenVideo from "./green-screen-video";
 
 const HeroSection = memo(function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -23,7 +22,7 @@ const HeroSection = memo(function HeroSection() {
       className="relative min-h-screen flex flex-col justify-center overflow-hidden"
     >
       <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-16 py-24 lg:py-0">
-        <div className="grid lg:grid-cols-[1fr_420px] gap-8 lg:gap-12 items-center">
+        <div className="max-w-3xl">
           {/* ─── Left: Main content ─── */}
           <motion.div
             style={{ y: nameY, opacity: fadeOut }}
@@ -90,10 +89,10 @@ const HeroSection = memo(function HeroSection() {
               transition={{ duration: 0.6, delay: 0.8 }}
               className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mb-10"
             >
-              I build software that works at scale —{" "}
-              <span className="text-foreground font-medium">e-commerce platforms</span> processing $500K+ GMV,{" "}
-              <span className="text-foreground font-medium">mobile apps</span> with real-time tracking, and{" "}
-              <span className="text-foreground font-medium">AI-powered</span> geospatial analysis tools.
+              Full-Stack Engineer crafting scalable products with precision and performance. —{" "}
+              <span className="text-foreground font-medium">e-commerce platforms</span> {", "}
+              <span className="text-foreground font-medium">Mobile apps</span> {", "}
+              <span className="text-foreground font-medium">AI-powered</span>
             </motion.p>
 
             {/* CTA row */}
@@ -123,26 +122,6 @@ const HeroSection = memo(function HeroSection() {
               >
                 View My Work →
               </button>
-            </motion.div>
-
-            {/* Stats row — compact horizontal */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.0 }}
-              className="flex items-center gap-6 mb-8"
-            >
-              {[
-                { value: "6+", label: "Projects" },
-                { value: "$500K", label: "GMV" },
-                { value: "15K+", label: "Visitors" },
-              ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-2xl font-black text-foreground tracking-tight">{stat.value}</span>
-                  <span className="text-xs font-mono text-muted-foreground">{stat.label}</span>
-                  {i < 2 && <span className="ml-4 h-6 w-px bg-border" />}
-                </div>
-              ))}
             </motion.div>
 
             {/* Social strip — minimal, not bento cards */}
@@ -176,21 +155,6 @@ const HeroSection = memo(function HeroSection() {
                 <MapPin className="w-3 h-3" /> Patna, India
               </span>
             </motion.div>
-          </motion.div>
-
-          {/* ─── Right: Green Screen Video (chroma-keyed) ─── */}
-          <motion.div
-            style={{ opacity: fadeOut }}
-            className="hidden lg:flex items-center justify-center relative"
-          >
-            <GreenScreenVideo
-              src="/video/5f8ac36069c54ea2a81c2b9ba67c8fb5.mp4"
-              className="w-[420px] h-[520px]"
-              keyColor={[0.0, 0.85, 0.0]}
-              similarity={0.35}
-              smoothness={0.12}
-              spill={0.6}
-            />
           </motion.div>
         </div>
       </div>

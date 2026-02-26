@@ -1,19 +1,275 @@
 import { useEffect, useRef, useCallback } from "react";
 
-interface Particle {
-    x: number;
-    y: number;
-    baseX: number;
-    baseY: number;
-    vx: number;
-    vy: number;
-    size: number;
-    opacity: number;
-    color: [number, number, number];
-    shape: number; // 0 = circle, 1 = dash, 2 = small dot
-    angle: number;
-    rotationSpeed: number;
-}
+/*
+ * Ocean-Depth WebGL Background
+ *
+ * Scroll journey through the ocean:
+ *   0.0 → Surface: bright turquoise, caustic light patterns, sun rays
+ *   0.3 → Shallow reef: medium blue-green, softer caustics
+ *   0.6 → Twilight zone: dark navy, fading light, sparse particles
+ *   1.0 → Abyss: near-black, bioluminescent specks
+ *
+ * Micro-interactions:
+ *   Mouse → underwater glow + current distortion
+ *   Click → bubble burst ripple
+ */
+
+const VERT = `
+  attribute vec2 a_position;
+  void main() { gl_Position = vec4(a_position, 0.0, 1.0); }
+`;
+
+const FRAG = `
+  precision highp float;
+
+  uniform vec2  u_resolution;
+  uniform float u_time;
+  uniform vec2  u_mouse;
+  uniform float u_scroll;
+  uniform float u_isDark;
+
+  #define MAX_RIPPLES 5
+  uniform vec3 u_ripples[MAX_RIPPLES];
+
+  // ─── Noise utilities ───
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float hash21(vec2 p) {
+    return fract(sin(dot(p, vec2(41.1, 289.7))) * 18756.34);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1, 0)), f.x),
+      mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x),
+      f.y
+    );
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.5;
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    for (int i = 0; i < 5; i++) {
+      v += a * noise(p);
+      p = rot * p * 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  // ─── Voronoi for caustic patterns ───
+  float voronoi(vec2 p) {
+    vec2 g = floor(p), f = fract(p);
+    float d = 1.0;
+    for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++) {
+      vec2 o = vec2(float(x), float(y));
+      vec2 r = o + hash(g + o) * 0.8 + 0.1 - f;
+      d = min(d, dot(r, r));
+    }
+    return sqrt(d);
+  }
+
+  // ─── Caustic light pattern ───
+  float caustic(vec2 p, float t) {
+    float c1 = voronoi(p * 4.0 + vec2(t * 0.3, t * 0.2));
+    float c2 = voronoi(p * 5.5 + vec2(-t * 0.15, t * 0.35));
+    return pow(1.0 - c1, 2.0) * pow(1.0 - c2, 2.0) * 4.0;
+  }
+
+  // ─── Light rays from above ───
+  float lightRays(vec2 uv, float t) {
+    float rays = 0.0;
+    for (int i = 0; i < 3; i++) {
+      float fi = float(i);
+      float x = uv.x + sin(t * 0.2 + fi * 2.1) * 0.3;
+      float ray = smoothstep(0.08, 0.0, abs(x - 0.3 - fi * 0.2));
+      ray *= smoothstep(0.0, 0.8, uv.y); // stronger from top
+      rays += ray * 0.15;
+    }
+    return rays;
+  }
+
+  // ─── Floating particles (bubbles / plankton) ───
+  float particles(vec2 uv, float t, float density) {
+    float p = 0.0;
+    for (int i = 0; i < 15; i++) {
+      float fi = float(i);
+      vec2 pos = vec2(
+        hash(vec2(fi, 0.0)),
+        fract(hash(vec2(fi, 1.0)) + t * (0.02 + hash(vec2(fi, 2.0)) * 0.03))
+      );
+      float size = 0.002 + hash(vec2(fi, 3.0)) * 0.003;
+      float d = distance(uv, pos);
+      p += smoothstep(size, size * 0.3, d) * density;
+    }
+    return p;
+  }
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution;
+    float aspect = u_resolution.x / u_resolution.y;
+    vec2 st = vec2(uv.x * aspect, uv.y);
+    float t = u_time;
+    float depth = u_scroll; // 0 = surface, 1 = abyss
+
+    // ════════════════════════════════════════
+    //  OCEAN DEPTH COLORS
+    // ════════════════════════════════════════
+
+    // Surface (0.0) → warm turquoise
+    vec3 surfaceTop    = vec3(0.00, 0.55, 0.65);
+    vec3 surfaceBottom = vec3(0.00, 0.35, 0.50);
+
+    // Shallow (0.3) → medium ocean blue
+    vec3 shallowTop    = vec3(0.00, 0.30, 0.50);
+    vec3 shallowBottom = vec3(0.00, 0.18, 0.38);
+
+    // Twilight (0.6) → dark navy
+    vec3 twilightTop    = vec3(0.00, 0.10, 0.25);
+    vec3 twilightBottom = vec3(0.00, 0.05, 0.15);
+
+    // Abyss (1.0) → near-black
+    vec3 abyssTop    = vec3(0.01, 0.02, 0.08);
+    vec3 abyssBottom = vec3(0.00, 0.01, 0.04);
+
+    // Blend zone colors based on depth
+    vec3 topColor, bottomColor;
+    if (depth < 0.33) {
+      float t2 = depth / 0.33;
+      topColor    = mix(surfaceTop, shallowTop, t2);
+      bottomColor = mix(surfaceBottom, shallowBottom, t2);
+    } else if (depth < 0.66) {
+      float t2 = (depth - 0.33) / 0.33;
+      topColor    = mix(shallowTop, twilightTop, t2);
+      bottomColor = mix(shallowBottom, twilightBottom, t2);
+    } else {
+      float t2 = (depth - 0.66) / 0.34;
+      topColor    = mix(twilightTop, abyssTop, t2);
+      bottomColor = mix(twilightBottom, abyssBottom, t2);
+    }
+
+    vec3 color = mix(bottomColor, topColor, uv.y);
+
+    // ════════════════════════════════════════
+    //  CAUSTIC LIGHT (fades with depth)
+    // ════════════════════════════════════════
+
+    float causticIntensity = smoothstep(0.6, 0.0, depth);
+    float caust = caustic(st, t);
+    color += caust * causticIntensity * vec3(0.05, 0.12, 0.10);
+
+    // ════════════════════════════════════════
+    //  LIGHT RAYS (visible only near surface)
+    // ════════════════════════════════════════
+
+    float rayIntensity = smoothstep(0.4, 0.0, depth);
+    float rays = lightRays(uv, t);
+    color += rays * rayIntensity * vec3(0.15, 0.25, 0.20);
+
+    // ════════════════════════════════════════
+    //  UNDERWATER CURRENT (noise distortion)
+    // ════════════════════════════════════════
+
+    float currentNoise = fbm(st * 2.0 + vec2(t * 0.1, t * 0.05));
+    color += currentNoise * 0.015 * (1.0 - depth * 0.5);
+
+    // ════════════════════════════════════════
+    //  PARTICLES — bubbles near surface, bioluminescence in deep
+    // ════════════════════════════════════════
+
+    // Bubbles (surface to mid)
+    float bubbleDensity = smoothstep(0.7, 0.0, depth) * 0.6;
+    float bubbles = particles(uv, t, bubbleDensity);
+    color += bubbles * vec3(0.3, 0.5, 0.5);
+
+    // Bioluminescence (deep only)
+    float bioDepth = smoothstep(0.5, 0.9, depth);
+    float biolum = particles(uv * 1.5 + 0.5, t * 0.5, bioDepth * 0.8);
+    color += biolum * vec3(0.1, 0.4, 0.6);
+
+    // Occasional bright bioluminescent flashes
+    float flash = hash(floor(st * 20.0 + floor(t * 0.3)));
+    flash = step(0.997, flash) * bioDepth;
+    color += flash * vec3(0.0, 0.5, 0.8) * (sin(t * 3.0 + flash * 100.0) * 0.5 + 0.5);
+
+    // ════════════════════════════════════════
+    //  MOUSE — underwater glow
+    // ════════════════════════════════════════
+
+    vec2 mouseUV = vec2(u_mouse.x * aspect, u_mouse.y);
+    float md = distance(st, mouseUV);
+    float mouseGlow = smoothstep(0.5, 0.0, md);
+    vec3 glowColor = mix(vec3(0.05, 0.15, 0.12), vec3(0.02, 0.08, 0.15), depth);
+    color += mouseGlow * glowColor;
+
+    // ════════════════════════════════════════
+    //  CLICK RIPPLES — bubble burst rings
+    // ════════════════════════════════════════
+
+    for (int i = 0; i < MAX_RIPPLES; i++) {
+      vec3 rp = u_ripples[i];
+      if (rp.z > 0.0) {
+        float age = t - rp.z;
+        if (age < 3.0) {
+          vec2 rc = vec2(rp.x * aspect, rp.y);
+          float d = distance(st, rc);
+          float radius = age * 0.5;
+          float ring = smoothstep(radius - 0.04, radius, d) *
+                       smoothstep(radius + 0.04, radius, d);
+          float fade = 1.0 - age / 3.0;
+          color += ring * fade * vec3(0.08, 0.18, 0.22);
+
+          // Inner bright bubble
+          float inner = smoothstep(0.05, 0.0, abs(d - radius * 0.3)) * fade;
+          color += inner * vec3(0.05, 0.12, 0.15) * 0.5;
+        }
+      }
+    }
+
+    // ════════════════════════════════════════
+    //  LIGHT MODE — soft ocean tint
+    // ════════════════════════════════════════
+
+    if (u_isDark < 0.5) {
+      // Light mode: subtle aqua-tinted white
+      vec3 lightSurface = vec3(0.92, 0.97, 0.98);
+      vec3 lightDeep = vec3(0.85, 0.92, 0.95);
+      vec3 lightColor = mix(lightSurface, lightDeep, depth);
+
+      // Add subtle caustic in light mode too
+      lightColor += caust * 0.02 * causticIntensity;
+      lightColor += currentNoise * 0.01;
+
+      // Mouse glow
+      lightColor += mouseGlow * 0.015;
+
+      // Click ripples
+      for (int i = 0; i < MAX_RIPPLES; i++) {
+        vec3 rp2 = u_ripples[i];
+        if (rp2.z > 0.0) {
+          float age2 = t - rp2.z;
+          if (age2 < 2.0) {
+            vec2 rc2 = vec2(rp2.x * aspect, rp2.y);
+            float d2 = distance(st, rc2);
+            float r2 = age2 * 0.5;
+            float ring2 = smoothstep(r2 - 0.04, r2, d2) *
+                          smoothstep(r2 + 0.04, r2, d2);
+            lightColor -= ring2 * (1.0 - age2 / 2.0) * 0.03;
+          }
+        }
+      }
+
+      gl_FragColor = vec4(lightColor, 1.0);
+      return;
+    }
+
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
 
 interface WebGLBackgroundProps {
     isDark: boolean;
@@ -21,265 +277,123 @@ interface WebGLBackgroundProps {
 
 export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const mouseRef = useRef({ x: -1000, y: -1000 });
-    const particlesRef = useRef<Particle[]>([]);
-    const animFrameRef = useRef<number>(0);
+    const glRef = useRef<WebGLRenderingContext | null>(null);
+    const uniformsRef = useRef<Record<string, WebGLUniformLocation | null>>({});
+    const mouseRef = useRef({ x: 0.5, y: 0.5 });
     const scrollRef = useRef(0);
+    const ripplesRef = useRef<{ x: number; y: number; time: number }[]>([]);
+    const startTimeRef = useRef(performance.now() / 1000);
+    const rafRef = useRef(0);
 
-    const createParticles = useCallback(
-        (width: number, height: number) => {
-            const particles: Particle[] = [];
-            // Spread particles across 3x viewport height for scroll coverage
-            const totalHeight = height * 3;
-            const count = Math.min(Math.floor((width * height) / 3500), 400);
+    const initGL = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return false;
+        const gl = canvas.getContext("webgl", { alpha: false, antialias: false });
+        if (!gl) return false;
+        glRef.current = gl;
 
-            // Color palettes for light and dark modes
-            const darkColors: [number, number, number][] = [
-                [108, 99, 255],   // Purple
-                [0, 212, 255],    // Cyan
-                [255, 107, 157],  // Pink
-                [100, 100, 200],  // Muted blue
-                [150, 140, 255],  // Light purple
-                [80, 200, 220],   // Teal
-            ];
+        const vs = gl.createShader(gl.VERTEX_SHADER)!;
+        gl.shaderSource(vs, VERT);
+        gl.compileShader(vs);
+        const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
+        gl.shaderSource(fs, FRAG);
+        gl.compileShader(fs);
+        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+            console.error("Ocean frag:", gl.getShaderInfoLog(fs));
+            return false;
+        }
+        const prog = gl.createProgram()!;
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+            console.error("Ocean link:", gl.getProgramInfoLog(prog));
+            return false;
+        }
+        gl.useProgram(prog);
 
-            const lightColors: [number, number, number][] = [
-                [59, 130, 246],   // Blue
-                [99, 102, 241],   // Indigo
-                [139, 92, 246],   // Violet
-                [79, 70, 229],    // Dark indigo
-                [37, 99, 235],    // Royal blue
-                [96, 165, 250],   // Light blue
-            ];
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
+        const a = gl.getAttribLocation(prog, "a_position");
+        gl.enableVertexAttribArray(a);
+        gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
 
-            const colors = isDark ? darkColors : lightColors;
+        for (const n of ["u_resolution", "u_time", "u_mouse", "u_scroll", "u_isDark"])
+            uniformsRef.current[n] = gl.getUniformLocation(prog, n);
+        for (let i = 0; i < 5; i++)
+            uniformsRef.current[`u_ripples[${i}]`] = gl.getUniformLocation(prog, `u_ripples[${i}]`);
 
-            for (let i = 0; i < count; i++) {
-                const x = Math.random() * width;
-                const y = Math.random() * totalHeight;
-                particles.push({
-                    x,
-                    y,
-                    baseX: x,
-                    baseY: y,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    size: Math.random() * 4 + 1,
-                    opacity: isDark
-                        ? Math.random() * 0.5 + 0.1
-                        : Math.random() * 0.35 + 0.08,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    shape: Math.floor(Math.random() * 3),
-                    angle: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.02,
-                });
-            }
-            return particles;
-        },
-        [isDark]
-    );
+        return true;
+    }, []);
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+        if (!canvas || !initGL()) return;
+        const gl = glRef.current!;
+        const u = uniformsRef.current;
 
         const resize = () => {
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = Math.min(window.devicePixelRatio, 1.5);
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
             canvas.style.width = `${window.innerWidth}px`;
             canvas.style.height = `${window.innerHeight}px`;
-            ctx.scale(dpr, dpr);
-            particlesRef.current = createParticles(
-                window.innerWidth,
-                window.innerHeight
-            );
+            gl.viewport(0, 0, canvas.width, canvas.height);
         };
-
         resize();
         window.addEventListener("resize", resize);
 
-        const handleMouseMove = (e: MouseEvent) => {
-            mouseRef.current.x = e.clientX;
-            mouseRef.current.y = e.clientY;
+        const onMouse = (e: MouseEvent) => {
+            mouseRef.current.x = e.clientX / window.innerWidth;
+            mouseRef.current.y = 1.0 - e.clientY / window.innerHeight;
         };
+        window.addEventListener("mousemove", onMouse);
 
-        const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length > 0) {
-                mouseRef.current.x = e.touches[0].clientX;
-                mouseRef.current.y = e.touches[0].clientY;
-            }
-        };
+        const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight;
+        const onScroll = () => { scrollRef.current = window.scrollY / (maxScroll() || 1); };
+        window.addEventListener("scroll", onScroll, { passive: true });
 
-        const handleScroll = () => {
-            scrollRef.current = window.scrollY;
-        };
-
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("touchmove", handleTouchMove, { passive: true });
-        window.addEventListener("scroll", handleScroll);
-
-        const animate = () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            ctx.clearRect(0, 0, w, h);
-
-            const mouse = mouseRef.current;
-            const scroll = scrollRef.current;
-            const interactionRadius = 180;
-            const pushStrength = 50;
-
-            particlesRef.current.forEach((p) => {
-                // Calculate screen-space Y position
-                const screenY = p.y - scroll;
-
-                // Only render particles visible on screen (with margin)
-                if (screenY < -100 || screenY > h + 100) return;
-
-                // Mouse interaction — push particles away from cursor
-                const dx = mouse.x - p.x;
-                const dy = mouse.y - screenY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < interactionRadius && dist > 0) {
-                    const force = (interactionRadius - dist) / interactionRadius;
-                    const angle = Math.atan2(dy, dx);
-                    p.x -= Math.cos(angle) * force * pushStrength * 0.08;
-                    p.y -= Math.sin(angle) * force * pushStrength * 0.08;
-                }
-
-                // Spring back to original position
-                p.x += (p.baseX - p.x) * 0.02;
-                p.y += (p.baseY - p.y) * 0.02;
-
-                // Gentle floating motion
-                p.x += p.vx;
-                p.y += p.vy;
-                p.baseX += Math.sin(Date.now() * 0.0005 + p.baseY * 0.01) * 0.1;
-
-                // Rotation
-                p.angle += p.rotationSpeed;
-
-                // Dynamic opacity boost when near mouse
-                let dynamicOpacity = p.opacity;
-                if (dist < interactionRadius * 1.5) {
-                    dynamicOpacity = Math.min(p.opacity + 0.3, 0.9);
-                }
-
-                // Draw particle
-                ctx.save();
-                ctx.translate(p.x, screenY);
-                ctx.rotate(p.angle);
-                ctx.globalAlpha = dynamicOpacity;
-
-                const [r, g, b] = p.color;
-
-                if (p.shape === 0) {
-                    // Circle
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.fill();
-
-                    // Glow on hover
-                    if (dist < interactionRadius) {
-                        ctx.beginPath();
-                        ctx.arc(0, 0, p.size * 3, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.08)`;
-                        ctx.fill();
-                    }
-                } else if (p.shape === 1) {
-                    // Dash / line
-                    ctx.beginPath();
-                    ctx.moveTo(-p.size * 2, 0);
-                    ctx.lineTo(p.size * 2, 0);
-                    ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.lineWidth = 1.5;
-                    ctx.lineCap = "round";
-                    ctx.stroke();
-                } else {
-                    // Small dot with ring
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size * 0.6, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.fill();
-
-                    if (dist < interactionRadius) {
-                        ctx.beginPath();
-                        ctx.arc(0, 0, p.size * 2, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.2)`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                }
-
-                ctx.restore();
+        const onClick = (e: MouseEvent) => {
+            const now = performance.now() / 1000 - startTimeRef.current;
+            ripplesRef.current.push({
+                x: e.clientX / window.innerWidth,
+                y: 1.0 - e.clientY / window.innerHeight,
+                time: now,
             });
-
-            // Draw connection lines between nearby particles close to mouse
-            if (mouse.x > 0 && mouse.y > 0) {
-                const nearParticles = particlesRef.current.filter((p) => {
-                    const screenY = p.y - scroll;
-                    const dx2 = mouse.x - p.x;
-                    const dy2 = mouse.y - screenY;
-                    return Math.sqrt(dx2 * dx2 + dy2 * dy2) < interactionRadius * 1.2;
-                });
-
-                const lineColor = isDark
-                    ? "108, 99, 255"
-                    : "59, 130, 246";
-
-                for (let i = 0; i < nearParticles.length; i++) {
-                    for (let j = i + 1; j < nearParticles.length; j++) {
-                        const a = nearParticles[i];
-                        const b = nearParticles[j];
-                        const ddx = a.x - b.x;
-                        const screenYA = a.y - scroll;
-                        const screenYB = b.y - scroll;
-                        const ddy = screenYA - screenYB;
-                        const d = Math.sqrt(ddx * ddx + ddy * ddy);
-
-                        if (d < 120) {
-                            ctx.beginPath();
-                            ctx.moveTo(a.x, screenYA);
-                            ctx.lineTo(b.x, screenYB);
-                            ctx.strokeStyle = `rgba(${lineColor}, ${0.12 * (1 - d / 120)})`;
-                            ctx.lineWidth = 0.5;
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            animFrameRef.current = requestAnimationFrame(animate);
+            if (ripplesRef.current.length > 5) ripplesRef.current.shift();
         };
+        window.addEventListener("click", onClick);
 
-        animate();
+        const render = () => {
+            const t = performance.now() / 1000 - startTimeRef.current;
+            gl.uniform2f(u["u_resolution"]!, canvas.width, canvas.height);
+            gl.uniform1f(u["u_time"]!, t);
+            gl.uniform2f(u["u_mouse"]!, mouseRef.current.x, mouseRef.current.y);
+            gl.uniform1f(u["u_scroll"]!, scrollRef.current);
+            gl.uniform1f(u["u_isDark"]!, isDark ? 1.0 : 0.0);
+            for (let i = 0; i < 5; i++) {
+                const rp = ripplesRef.current[i];
+                gl.uniform3f(u[`u_ripples[${i}]`]!, rp?.x ?? 0, rp?.y ?? 0, rp?.time ?? 0);
+            }
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            rafRef.current = requestAnimationFrame(render);
+        };
+        rafRef.current = requestAnimationFrame(render);
 
         return () => {
             window.removeEventListener("resize", resize);
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("touchmove", handleTouchMove);
-            window.removeEventListener("scroll", handleScroll);
-            cancelAnimationFrame(animFrameRef.current);
+            window.removeEventListener("mousemove", onMouse);
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("click", onClick);
+            cancelAnimationFrame(rafRef.current);
         };
-    }, [createParticles, isDark]);
+    }, [initGL, isDark]);
 
     return (
         <canvas
             ref={canvasRef}
-            style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                pointerEvents: "none",
-                zIndex: 0,
-            }}
+            style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }}
         />
     );
 }

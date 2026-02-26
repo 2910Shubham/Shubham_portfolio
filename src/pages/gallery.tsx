@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, X, Award, Camera } from "lucide-react";
 
@@ -21,128 +21,63 @@ const allItems: GalleryItem[] = [
   { src: "images/TechphiliaSoloWithCheck.jpg", event: "Techphilia — Prize Check", category: "photo" },
 ];
 
-/* ── Carousel Row ── */
-function CarouselRow({
+/* ── Infinite marquee row ── */
+function MarqueeGallery({
   items,
+  direction,
+  speed = 45,
   title,
   icon: Icon,
-  autoDirection = 1,
+  onItemClick,
 }: {
   items: GalleryItem[];
+  direction: "left" | "right";
+  speed?: number;
   title: string;
   icon: React.ElementType;
-  autoDirection?: number;
+  onItemClick: (item: GalleryItem, allItems: GalleryItem[], index: number) => void;
 }) {
-  const [current, setCurrent] = useState(0);
-  const [lightbox, setLightbox] = useState<number | null>(null);
-  const [paused, setPaused] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
-
-  const count = items.length;
-
-  const next = useCallback(() => setCurrent((p) => (p + 1) % count), [count]);
-  const prev = useCallback(() => setCurrent((p) => (p - 1 + count) % count), [count]);
-
-  // Auto-play
-  useEffect(() => {
-    if (paused) return;
-    timerRef.current = setInterval(() => {
-      if (autoDirection > 0) next();
-      else prev();
-    }, 3500);
-    return () => clearInterval(timerRef.current);
-  }, [paused, next, prev, autoDirection]);
-
-  // Keyboard nav in lightbox
-  useEffect(() => {
-    if (lightbox === null) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") setLightbox((p) => (p !== null ? (p + 1) % count : null));
-      if (e.key === "ArrowLeft") setLightbox((p) => (p !== null ? (p - 1 + count) % count : null));
-      if (e.key === "Escape") setLightbox(null);
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [lightbox, count]);
-
-  // How many cards visible based on screen
-  const getVisible = () => {
-    if (typeof window === "undefined") return 3;
-    if (window.innerWidth < 640) return 1;
-    if (window.innerWidth < 1024) return 2;
-    return 3;
-  };
-
-  const visible = getVisible();
-  const cardWidth = 100 / visible;
+  // Triple the items for a smoother seamless loop
+  const tripled = [...items, ...items, ...items];
 
   return (
-    <div className="mb-16">
-      {/* Title */}
+    <div className="mb-10">
+      {/* Row label */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
         viewport={{ once: true }}
-        className="flex items-center justify-between mb-8"
+        className="flex items-center gap-3 mb-5 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-primary" />
-          </div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-foreground">{title}</h3>
+        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-primary" />
         </div>
-
-        {/* Nav arrows */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-muted-foreground mr-3 hidden sm:inline">
-            {String(current + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
-          </span>
-          <button
-            onClick={prev}
-            className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-all duration-200"
-            aria-label="Previous"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={next}
-            className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-all duration-200"
-            aria-label="Next"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
+        <h3 className="text-lg font-bold text-foreground">{title}</h3>
+        <div className="h-px flex-1 bg-border" />
       </motion.div>
 
-      {/* Carousel track */}
-      <div
-        className="overflow-hidden rounded-2xl"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        <motion.div
-          ref={trackRef}
-          className="flex"
-          animate={{ x: `-${current * cardWidth}%` }}
-          transition={{ type: "spring", stiffness: 260, damping: 30 }}
+      {/* Scrolling track */}
+      <div className="relative overflow-hidden">
+        {/* Fade edges */}
+        <div className="absolute left-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+
+        <div
+          className="flex gap-5"
+          style={{
+            animation: `marquee-${direction} ${speed}s linear infinite`,
+            width: "max-content",
+          }}
         >
-          {items.map((item, i) => (
+          {tripled.map((item, i) => (
             <div
-              key={item.src}
-              className="flex-shrink-0 px-2"
-              style={{ width: `${cardWidth}%` }}
+              key={`${item.src}-${i}`}
+              className="flex-shrink-0 group cursor-pointer"
+              style={{ width: "320px" }}
+              onClick={() => onItemClick(item, items, i % items.length)}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: i * 0.05 }}
-                viewport={{ once: true }}
-                className="group relative rounded-2xl overflow-hidden border border-border bg-card cursor-pointer"
-                onClick={() => setLightbox(i)}
-              >
-                {/* Image */}
+              <div className="relative rounded-xl overflow-hidden border border-border bg-card">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
                     src={item.src}
@@ -150,115 +85,87 @@ function CarouselRow({
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
                   />
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex items-end justify-center pb-6">
-                    <span className="text-white text-sm font-medium px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                      View Full Size
-                    </span>
-                  </div>
-                  {/* Accent corner */}
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                    <Icon className="w-4 h-4 text-primary-foreground" />
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-
-                {/* Label */}
-                <div className="p-4">
+                <div className="p-3">
                   <p className="text-sm font-semibold text-foreground truncate">{item.event}</p>
-                  <p className="text-xs text-muted-foreground mt-1 capitalize">{item.category}</p>
                 </div>
-              </motion.div>
+              </div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
-
-      {/* Dot indicators */}
-      <div className="flex justify-center gap-1.5 mt-5">
-        {items.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className="transition-all duration-300"
-            aria-label={`Go to slide ${i + 1}`}
-          >
-            <div
-              className="h-1.5 rounded-full transition-all duration-300"
-              style={{
-                width: i === current ? 24 : 6,
-                background: i === current ? "var(--primary)" : "var(--border)",
-              }}
-            />
-          </button>
-        ))}
-      </div>
-
-      {/* Lightbox modal */}
-      <AnimatePresence>
-        {lightbox !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
-            onClick={() => setLightbox(null)}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setLightbox(null)}
-              className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Prev */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightbox((p) => (p !== null ? (p - 1 + count) % count : null));
-              }}
-              className="absolute left-4 sm:left-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            {/* Image */}
-            <motion.div
-              key={lightbox}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              className="relative max-w-4xl max-h-[85vh] w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={items[lightbox].src}
-                alt={items[lightbox].event}
-                className="w-full h-full object-contain rounded-lg"
-              />
-              <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-lg">
-                <p className="text-white font-semibold text-lg">{items[lightbox].event}</p>
-                <p className="text-white/60 text-sm mt-1">
-                  {lightbox + 1} of {count} · {items[lightbox].category}
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Next */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightbox((p) => (p !== null ? (p + 1) % count : null));
-              }}
-              className="absolute right-4 sm:right-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
+  );
+}
+
+/* ── Lightbox ── */
+function Lightbox({
+  items,
+  index,
+  onClose,
+}: {
+  items: GalleryItem[];
+  index: number;
+  onClose: () => void;
+}) {
+  const [current, setCurrent] = useState(index);
+  const count = items.length;
+
+  const next = () => setCurrent((p) => (p + 1) % count);
+  const prev = () => setCurrent((p) => (p - 1 + count) % count);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); prev(); }}
+        className="absolute left-4 sm:left-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
+      >
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+
+      <motion.div
+        key={current}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.3 }}
+        className="relative max-w-4xl max-h-[85vh] w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={items[current].src}
+          alt={items[current].event}
+          className="w-full h-full object-contain rounded-lg"
+        />
+        <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-lg">
+          <p className="text-white font-semibold text-lg">{items[current].event}</p>
+          <p className="text-white/60 text-sm mt-1">
+            {current + 1} of {count}
+          </p>
+        </div>
+      </motion.div>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); next(); }}
+        className="absolute right-4 sm:right-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all z-10"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
+    </motion.div>
   );
 }
 
@@ -266,39 +173,77 @@ function CarouselRow({
 export function GallerySection() {
   const certificates = allItems.filter((i) => i.category === "certificate");
   const photos = allItems.filter((i) => i.category === "photo");
+  const [lightbox, setLightbox] = useState<{ items: GalleryItem[]; index: number } | null>(null);
+
+  const openLightbox = (_item: GalleryItem, items: GalleryItem[], index: number) => {
+    setLightbox({ items, index });
+  };
 
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
+    <section className="py-16 lg:py-20 relative overflow-hidden">
+      {/* CSS keyframes */}
+      <style>{`
+        @keyframes marquee-left {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+        @keyframes marquee-right {
+          0% { transform: translateX(-33.333%); }
+          100% { transform: translateX(0); }
+        }
+      `}</style>
+
+      {/* Section header */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Gallery & Achievements
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px w-12 bg-foreground/20" />
+            <span className="text-xs font-mono text-muted-foreground tracking-[0.2em] uppercase">
+              Gallery
+            </span>
+          </div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
+            Moments
+            <br />
+            <span className="text-muted-foreground">& achievements.</span>
           </h2>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="w-24 h-1 bg-primary mx-auto rounded-full origin-left"
-          />
-          <p className="text-muted-foreground mt-6 max-w-2xl mx-auto text-lg">
-            Certificates, hackathon wins, and moments captured along the journey.
-          </p>
         </motion.div>
-
-        {/* Certificates carousel */}
-        <CarouselRow items={certificates} title="Certificates" icon={Award} autoDirection={1} />
-
-        {/* Photos carousel (auto-scrolls opposite direction) */}
-        <CarouselRow items={photos} title="Hackathon Moments" icon={Camera} autoDirection={-1} />
       </div>
+
+      {/* Infinite marquee rows — full viewport width */}
+      <MarqueeGallery
+        items={certificates}
+        direction="left"
+        speed={35}
+        title="Certificates"
+        icon={Award}
+        onItemClick={openLightbox}
+      />
+      <MarqueeGallery
+        items={photos}
+        direction="right"
+        speed={40}
+        title="Hackathon Moments"
+        icon={Camera}
+        onItemClick={openLightbox}
+      />
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <Lightbox
+            items={lightbox.items}
+            index={lightbox.index}
+            onClose={() => setLightbox(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

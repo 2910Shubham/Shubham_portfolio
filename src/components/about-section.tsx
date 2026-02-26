@@ -1,146 +1,130 @@
 import { motion } from "framer-motion";
-import { Smartphone, BarChart3, Zap, Award } from "lucide-react";
+import {
+  Smartphone,
+  BarChart3,
+  Zap,
+  Award,
+  GraduationCap,
+  MapPin,
+} from "lucide-react";
+
+/* ─── Data ─── */
+
+const skills = [
+  { icon: Smartphone, label: "Mobile-First", accent: "#6366f1" },
+  { icon: BarChart3, label: "Data-Driven", accent: "#8b5cf6" },
+  { icon: Zap, label: "Full-Stack", accent: "#06b6d4" },
+  { icon: Award, label: "Hackathon Winner", accent: "#f59e0b" },
+];
+
+
 
 export default function AboutSection() {
-  const specializations = [
-    {
-      icon: Smartphone,
-      title: "Mobile-First Development",
-      description: "Cross-platform Flutter apps & responsive mobile-optimized web applications with 99%+ performance scores.",
-    },
-    {
-      icon: BarChart3,
-      title: "Data-Driven Solutions",
-      description: "AI/ML integration, satellite imagery analysis, UHI mapping, and geospatial data visualization at scale.",
-    },
-    {
-      icon: Zap,
-      title: "Full-Stack Performance",
-      description: "End-to-end optimization from real-time data pipelines to responsive UIs. Real-time ride tracking, live heatmaps.",
-    },
-    {
-      icon: Award,
-      title: "Production-Grade Code",
-      description: "Techphilia 2025 Hackathon winner. Deployed apps serving 1000+ users with secure payment & authentication.",
-    },
-  ];
-
-  const experience = [
-    {
-      role: "Software Engineer Intern",
-      company: "Internnexus",
-      achievement: "Engineered Career Bridge platform | Real-time job-matching algorithm | 50% faster UX",
-    },
-    {
-      role: "Frontend Engineer Intern",
-      company: "Sikati.in",
-      achievement: "Built dynamic Mobile applications frontend | Reduced load time by 40% | Improved user engagement",
-    },
-    {
-      role: "Smart India Hackathon Finalist",
-      company: "Govt. of India",
-      achievement: "Build a Gamified Solition for Ocean Literacy | Top 5/500+ teams nationwide",
-    },
-  ];
-
   return (
-    <section id="about" className="py-20 bg-muted/30">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="about" className="relative py-16 lg:py-20">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+        {/* ─── Header ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-20"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            About Me
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px w-12 bg-foreground/20" />
+            <span className="text-xs font-mono text-muted-foreground tracking-[0.2em] uppercase">
+              About
+            </span>
+          </div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
+            Engineer who
+            <br />
+            builds things
+            <br />
+            <span className="text-muted-foreground">that matter.</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Full Stack Engineer
-          </p>
-          <div className="w-24 h-1 bg-primary mx-auto rounded-full mt-4"></div>
         </motion.div>
 
-        {/* Profile Image – Always on top, centered */}
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          viewport={{ once: true }}
-          className="flex justify-center mb-12"
-        >
-          <div className="relative group">
-            {/* Decorative gradient ring */}
-            <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary via-blue-400 to-indigo-600 opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500" />
-            <img
-              src="images/shubham1.png"
-              alt="Shubham Kumar Mishra - Professional Developer Portrait"
-              className="relative w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 rounded-full shadow-2xl object-cover border-4 border-background hover-lift"
-            />
-          </div>
-        </motion.div>
+        {/* ─── Two-column: Big Image + Bio ─── */}
+        <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-20 items-center mb-24">
+          {/* Left — Large profile image */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="flex flex-col items-center lg:items-start">
+              {/* Large circular profile image — hides the white bg */}
+              <div className="relative mb-8">
+                <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full overflow-hidden ">
+                  <img
+                    src="images/shubham1.png"
+                    alt="Shubham Kumar Mishra"
+                    className=""
+                  />
+                </div>
+              </div>
 
-        {/* Bio text */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
-          viewport={{ once: true }}
-          className="max-w-3xl mx-auto text-center mb-12"
-        >
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            I'm <span className="font-semibold text-foreground">Shubham Kumar Mishra</span>, a full-stack engineer specializing in <span className="font-semibold text-primary">mobile-first development</span>.  I build production-grade applications that solve real-world problems—from cross-platform mobile apps serving thousands of users to AI-powered geospatial analysis platforms.
-          </p>
-          <p className="text-sm text-primary font-semibold mt-4">
-            📚 Bachelor of Computer Application | Patna University
-          </p>
-        </motion.div>
+              {/* Name & location under the image */}
+              <h3 className="text-2xl font-bold text-foreground mb-2">
+                Shubham Kr. Mishra
+              </h3>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> Patna, India
+                </span>
+                <span className="flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5" /> BCA, Patna University
+                </span>
+              </div>
+            </div>
+          </motion.div>
 
-        {/* Specialization cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {specializations.map((spec, index) => {
-            const Icon = spec.icon;
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                viewport={{ once: true }}
-                className="p-4 rounded-lg bg-card border border-border hover:shadow-lg transition-shadow"
-              >
-                <Icon className="w-5 h-5 text-primary mb-2" />
-                <h4 className="font-semibold text-foreground text-sm mb-1">
-                  {spec.title}
-                </h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {spec.description}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
+          {/* Right — Bio + Skills */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8">
+              Full-stack engineer specializing in{" "}
+              <span className="text-foreground font-medium">
+                mobile-first development
+              </span>
+              . I build production-grade applications that solve real-world
+              problems — from cross-platform mobile apps to AI-powered
+              geospatial platforms.
+            </p>
 
-        {/* Professional Experience */}
-        <div className="max-w-3xl mx-auto">
-          <h3 className="font-semibold text-foreground text-lg mb-4 text-center">Professional Experience</h3>
-          <div className="space-y-3">
-            {experience.map((exp, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                viewport={{ once: true }}
-                className="pl-4 border-l-2 border-primary"
-              >
-                <p className="font-semibold text-foreground">{exp.role}</p>
-                <p className="text-sm text-primary">{exp.company}</p>
-                <p className="text-sm text-muted-foreground">{exp.achievement}</p>
-              </motion.div>
-            ))}
-          </div>
+            <p className="text-base text-muted-foreground leading-relaxed mb-10">
+              I care about clean code, performance, and user experience.
+              Every project I ship is built to work at scale.
+            </p>
+
+            {/* Skill pills */}
+            <div className="flex flex-wrap gap-3">
+              {skills.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.25 + i * 0.06 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-sm text-foreground hover:border-foreground/30 transition-colors duration-300"
+                  >
+                    <Icon className="w-4 h-4" style={{ color: s.accent }} />
+                    {s.label}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
