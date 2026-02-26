@@ -48,9 +48,9 @@ export default function MouseFollower() {
             ) {
                 isHovering = true;
                 outer.style.transform = "translate(-50%, -50%) scale(1.8)";
-                outer.style.borderColor = "rgba(59, 130, 246, 0.6)";
-                outer.style.background = "rgba(59, 130, 246, 0.06)";
-                inner.style.background = "rgba(59, 130, 246, 0.9)";
+                outer.style.borderColor = "rgba(245, 158, 11, 0.6)";
+                outer.style.background = "rgba(245, 158, 11, 0.06)";
+                inner.style.background = "rgba(245, 158, 11, 0.9)";
             }
         };
 
@@ -61,9 +61,9 @@ export default function MouseFollower() {
             ) {
                 isHovering = false;
                 outer.style.transform = "translate(-50%, -50%) scale(1)";
-                outer.style.borderColor = "rgba(99, 102, 241, 0.5)";
+                outer.style.borderColor = "rgba(240, 244, 255, 0.35)";
                 outer.style.background = "transparent";
-                inner.style.background = "rgba(99, 102, 241, 0.9)";
+                inner.style.background = "rgba(245, 158, 11, 0.9)";
             }
         };
 
@@ -126,7 +126,7 @@ export default function MouseFollower() {
                         width: `${4 - i * 0.5}px`,
                         height: `${4 - i * 0.5}px`,
                         borderRadius: "50%",
-                        background: `rgba(99, 102, 241, ${0.4 - i * 0.07})`,
+                        background: `rgba(245, 158, 11, ${0.3 - i * 0.05})`,
                         transform: "translate(-50%, -50%)",
                         pointerEvents: "none",
                         zIndex: 9997,
@@ -143,7 +143,7 @@ export default function MouseFollower() {
                     width: "40px",
                     height: "40px",
                     borderRadius: "50%",
-                    border: "1.5px solid rgba(99, 102, 241, 0.5)",
+                    border: "1.5px solid rgba(240, 244, 255, 0.35)",
                     background: "transparent",
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
@@ -162,7 +162,7 @@ export default function MouseFollower() {
                     width: "7px",
                     height: "7px",
                     borderRadius: "50%",
-                    background: "rgba(99, 102, 241, 0.9)",
+                    background: "rgba(245, 158, 11, 0.9)",
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
                     zIndex: 9999,

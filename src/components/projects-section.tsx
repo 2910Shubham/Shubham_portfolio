@@ -1,6 +1,6 @@
-import { motion, useInView } from "framer-motion";
-import { ExternalLink, Github, ArrowRight } from "lucide-react";
-import { useRef, useEffect, useCallback, useState } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { ExternalLink, ArrowRight, X, Sparkles, Layers, Zap, Globe, Smartphone, Brain } from "lucide-react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 type Project = {
   id: string;
@@ -8,6 +8,7 @@ type Project = {
   description: string;
   image: string;
   technologies: string[];
+  category: string;
   link?: string | null;
   details: {
     overview: string;
@@ -17,293 +18,272 @@ type Project = {
   };
 };
 
-interface ProjectsSectionProps {
-  onProjectClick: (project: Project) => void;
-}
-
-/* ────── holographic canvas shimmer ────── */
-function HoloCanvas({ active, mouseX, mouseY }: { active: boolean; mouseX: number; mouseY: number }) {
-  const cvRef = useRef<HTMLCanvasElement>(null);
-  const glRef = useRef<WebGLRenderingContext | null>(null);
-  const pgRef = useRef<WebGLProgram | null>(null);
-  const uRef = useRef<{ time: WebGLUniformLocation | null; mouse: WebGLUniformLocation | null; res: WebGLUniformLocation | null }>({ time: null, mouse: null, res: null });
-  const frameRef = useRef(0);
-  const startRef = useRef(0);
-
-  useEffect(() => {
-    const cv = cvRef.current;
-    if (!cv) return;
-    const gl = cv.getContext("webgl", { premultipliedAlpha: false, alpha: true });
-    if (!gl) return;
-    glRef.current = gl;
-
-    const vsSrc = `attribute vec2 a_pos;void main(){gl_Position=vec4(a_pos,0.0,1.0);}`;
-    const fsSrc = `precision mediump float;
-uniform float u_time;uniform vec2 u_mouse;uniform vec2 u_res;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
-vec3 hsl(float h,float s,float l){vec3 r=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return l+s*(r-0.5)*(1.0-abs(2.0*l-1.0));}
-void main(){vec2 uv=gl_FragCoord.xy/u_res;uv+=(u_mouse-0.5)*0.12;
-float n=(noise(uv*3.0+u_time*0.3)+noise(uv*7.0-u_time*0.2)*0.5+noise(uv*13.0+u_time*0.5)*0.25)/1.75;
-vec3 c=hsl(n+u_time*0.08,0.75,0.55);
-float st=sin((uv.x+uv.y)*25.0+u_time*1.5)*0.5+0.5;
-c=mix(c,c*1.3,smoothstep(0.3,0.7,st)*0.35);
-c*=clamp(1.0-length((uv-0.5)*1.5),0.0,1.0);
-gl_FragColor=vec4(c,1.0);}`;
-
-    const vs = gl.createShader(gl.VERTEX_SHADER)!;
-    gl.shaderSource(vs, vsSrc); gl.compileShader(vs);
-    const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-    gl.shaderSource(fs, fsSrc); gl.compileShader(fs);
-    const pg = gl.createProgram()!;
-    gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
-    pgRef.current = pg;
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    const loc = gl.getAttribLocation(pg, "a_pos");
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    uRef.current = {
-      time: gl.getUniformLocation(pg, "u_time"),
-      mouse: gl.getUniformLocation(pg, "u_mouse"),
-      res: gl.getUniformLocation(pg, "u_res"),
-    };
-
-    const r = cv.getBoundingClientRect();
-    const dpr = Math.min(devicePixelRatio, 2);
-    cv.width = r.width * dpr; cv.height = r.height * dpr;
-    gl.viewport(0, 0, cv.width, cv.height);
-    startRef.current = performance.now();
-  }, []);
-
-  useEffect(() => {
-    const gl = glRef.current;
-    const pg = pgRef.current;
-    const cv = cvRef.current;
-    if (!gl || !pg || !cv) return;
-
-    if (active) {
-      const render = () => {
-        const t = (performance.now() - startRef.current) * 0.001;
-        gl.useProgram(pg);
-        gl.uniform1f(uRef.current.time, t);
-        gl.uniform2f(uRef.current.mouse, mouseX, 1 - mouseY);
-        gl.uniform2f(uRef.current.res, cv.width, cv.height);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        frameRef.current = requestAnimationFrame(render);
-      };
-      render();
-    } else {
-      cancelAnimationFrame(frameRef.current);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    }
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [active, mouseX, mouseY]);
-
-  return (
-    <canvas
-      ref={cvRef}
-      className="absolute inset-0 w-full h-full rounded-2xl pointer-events-none transition-opacity duration-500"
-      style={{
-        zIndex: 2,
-        mixBlendMode: "color-dodge",
-        opacity: active ? 0.3 : 0,
-      }}
-    />
-  );
-}
-
 /* ────── accent colors per project ────── */
-const ACCENT_COLORS = [
-  "#00e5cc", // tuku go
-  "#7c5cfc", // puffnmore
-  "#ff5e87", // campus kart
-  "#ffd97d", // mishras
-  "#ff9f43", // success gateway
-  "#2ecc71", // green island
-];
-
-const STATUS_LABELS: Record<string, { text: string; class: string }> = {
-  "tuku-go": { text: "In Development", class: "text-[#00e5cc] border-[#00e5cc]/30" },
-  "puffnmore": { text: "Live", class: "text-[#2ecc71] border-[#2ecc71]/30" },
-  "campus-kart": { text: "Live", class: "text-[#2ecc71] border-[#2ecc71]/30" },
-  "mishras-enterprises": { text: "Live", class: "text-[#2ecc71] border-[#2ecc71]/30" },
-  "success-gateway": { text: "Live", class: "text-[#2ecc71] border-[#2ecc71]/30" },
-  "green-island-uhi": { text: "Research", class: "text-[#7c5cfc] border-[#7c5cfc]/30" },
+const ACCENT_MAP: Record<string, string> = {
+  "tuku-go": "#00e5cc",
+  "puffnmore": "#7c5cfc",
+  "campus-kart": "#ff5e87",
+  "mishras-enterprises": "#ffd97d",
+  "success-gateway": "#ff9f43",
+  "green-island-uhi": "#2ecc71",
 };
 
-/* ────── single project card ────── */
-function ProjectCard({
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Mobile App": <Smartphone className="w-3.5 h-3.5" />,
+  "E-Commerce": <Globe className="w-3.5 h-3.5" />,
+  "Marketplace": <Layers className="w-3.5 h-3.5" />,
+  "Business Site": <Sparkles className="w-3.5 h-3.5" />,
+  "Education": <Zap className="w-3.5 h-3.5" />,
+  "AI / Research": <Brain className="w-3.5 h-3.5" />,
+};
+
+const STATUS_MAP: Record<string, { text: string; color: string }> = {
+  "tuku-go": { text: "In Development", color: "#00e5cc" },
+  "puffnmore": { text: "Live", color: "#2ecc71" },
+  "campus-kart": { text: "Live", color: "#2ecc71" },
+  "mishras-enterprises": { text: "Live", color: "#2ecc71" },
+  "success-gateway": { text: "Live", color: "#2ecc71" },
+  "green-island-uhi": { text: "Research", color: "#7c5cfc" },
+};
+
+/* ────── Bento Card Component ────── */
+function BentoCard({
   project,
   index,
+  size,
   onProjectClick,
 }: {
   project: Project;
   index: number;
+  size: "large" | "medium" | "small";
   onProjectClick: (p: Project) => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
-  const accent = ACCENT_COLORS[index] || "#7c5cfc";
-  const status = STATUS_LABELS[project.id];
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const accent = ACCENT_MAP[project.id] || "#7c5cfc";
+  const status = STATUS_MAP[project.id];
+  const catIcon = CATEGORY_ICONS[project.category];
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (isMobile) return;
-      const rect = cardRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      setMousePos({ x, y });
-      setTilt({
-        rx: -(y - 0.5) * 20,
-        ry: (x - 0.5) * 20,
-      });
-    },
-    [isMobile]
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    setHovered(false);
-    setTilt({ rx: 0, ry: 0 });
-    setMousePos({ x: 0.5, y: 0.5 });
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setMousePos({ x, y });
   }, []);
+
+  const sizeClasses = {
+    large: "md:col-span-2 md:row-span-2",
+    medium: "md:col-span-1 md:row-span-2",
+    small: "md:col-span-1 md:row-span-1",
+  };
 
   return (
     <motion.div
       ref={cardRef}
-      initial={{ opacity: 0, rotateY: 60, scale: 0.9 }}
-      whileInView={{ opacity: 1, rotateY: 0, scale: 1 }}
-      transition={{ duration: 0.7, delay: index * 0.12, ease: [0.23, 1, 0.32, 1] }}
-      viewport={{ once: true, margin: "-50px" }}
-      className="group relative cursor-pointer"
-      style={{ perspective: "1200px" }}
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.6,
+        delay: index * 0.08,
+        ease: [0.23, 1, 0.32, 1],
+      }}
+      viewport={{ once: true, margin: "-40px" }}
+      className={`group relative cursor-pointer ${sizeClasses[size]}`}
       onMouseEnter={() => setHovered(true)}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => {
+        setHovered(false);
+        setMousePos({ x: 0.5, y: 0.5 });
+      }}
       onClick={() => onProjectClick(project)}
+      layout
     >
       <div
-        className="relative rounded-2xl overflow-hidden border transition-all duration-500"
+        className="relative h-full rounded-[20px] overflow-hidden transition-all duration-500"
         style={{
-          transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
-          transformStyle: "preserve-3d",
-          background: "var(--card)",
-          borderColor: hovered ? `${accent}55` : "var(--border)",
+          background: "rgba(255,255,255,0.03)",
+          border: `1px solid ${hovered ? `${accent}50` : "rgba(255,255,255,0.06)"}`,
           boxShadow: hovered
-            ? `0 0 0 1px ${accent}44, 0 25px 60px ${accent}18, 0 8px 24px rgba(0,0,0,0.3)`
-            : "0 4px 24px rgba(0,0,0,0.08)",
-          transition: "transform 0.15s ease-out, box-shadow 0.4s ease, border-color 0.4s ease",
+            ? `0 0 0 1px ${accent}22, 0 20px 60px -10px ${accent}20, 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)`
+            : `0 2px 20px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.04)`,
         }}
       >
-        {/* Holographic shader overlay */}
-        {!isMobile && <HoloCanvas active={hovered} mouseX={mousePos.x} mouseY={mousePos.y} />}
-
-        {/* Specular light glint */}
+        {/* Spotlight gradient following cursor */}
         <div
-          className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-500 rounded-[20px]"
           style={{
-            zIndex: 3,
             opacity: hovered ? 1 : 0,
-            background: `radial-gradient(circle 200px at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.1) 0%, transparent 70%)`,
+            background: `radial-gradient(600px circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${accent}12, transparent 40%)`,
           }}
         />
 
-        {/* Card content */}
-        <div className="relative z-[1] p-5">
-          {/* Top bar */}
-          <div className="flex justify-between items-center mb-4">
-            {status && (
+        {/* Shimmer line on hover */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[1px] transition-opacity duration-500"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background: `linear-gradient(90deg, transparent, ${accent}80, transparent)`,
+          }}
+        />
+
+        {/* Image area */}
+        <div
+          className="relative overflow-hidden"
+          style={{
+            height: size === "large" ? "60%" : size === "medium" ? "55%" : "55%",
+          }}
+        >
+          <img
+            src={project.image}
+            alt={project.title}
+            className="w-full h-full object-cover transition-all duration-700"
+            style={{
+              transform: hovered ? "scale(1.08)" : "scale(1)",
+              filter: hovered ? "brightness(1.1)" : "brightness(0.85)",
+            }}
+          />
+          {/* Gradient overlay on image */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.85) 100%), linear-gradient(135deg, ${accent}15, transparent 60%)`,
+            }}
+          />
+
+          {/* Status badge */}
+          {status && (
+            <div
+              className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-xl"
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                border: `1px solid ${status.color}40`,
+              }}
+            >
               <span
-                className={`text-[10px] font-mono font-medium uppercase tracking-widest px-3 py-1 rounded-full border ${status.class}`}
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: status.color }}
+              />
+              <span
+                className="text-[10px] font-mono font-semibold uppercase tracking-wider"
+                style={{ color: status.color }}
               >
                 {status.text}
               </span>
-            )}
-            <span className="text-[11px] font-mono text-muted-foreground/50">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-          </div>
+            </div>
+          )}
 
-          {/* Thumbnail */}
+          {/* Number badge */}
           <div
-            className="relative w-full aspect-video rounded-xl overflow-hidden mb-5"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl text-[11px] font-mono font-bold transition-all duration-300"
             style={{
-              transform: hovered ? "translateZ(30px) scale(1.02)" : "translateZ(0) scale(0.98)",
-              transition: "transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)",
-              transformStyle: "preserve-3d",
+              background: hovered ? `${accent}30` : "rgba(255,255,255,0.08)",
+              color: hovered ? accent : "rgba(255,255,255,0.4)",
+              border: `1px solid ${hovered ? `${accent}40` : "rgba(255,255,255,0.08)"}`,
             }}
           >
-            <img
-              src={project.image}
-              alt={project.title}
-              className="w-full h-full object-cover transition-transform duration-700"
-              style={{ transform: hovered ? "scale(1.06)" : "scale(1)" }}
-            />
-            {/* Gradient tint overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(135deg, ${accent}18, transparent 60%), linear-gradient(to top, rgba(0,0,0,0.4), transparent 50%)`,
-              }}
-            />
+            {String(index + 1).padStart(2, "0")}
           </div>
 
-          {/* Title */}
-          <h3 className="text-lg font-bold text-foreground mb-2 leading-tight line-clamp-2">
-            {project.title}
-          </h3>
+          {/* Category on image for large cards */}
+          {size === "large" && (
+            <div className="absolute bottom-4 left-5 flex items-center gap-2">
+              <span
+                className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-xl"
+                style={{
+                  background: "rgba(0,0,0,0.4)",
+                  color: accent,
+                  border: `1px solid ${accent}30`,
+                }}
+              >
+                {catIcon}
+                {project.category}
+              </span>
+            </div>
+          )}
+        </div>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">
-            {project.description}
-          </p>
+        {/* Content area */}
+        <div className="relative p-5 flex flex-col justify-between" style={{ height: size === "large" ? "40%" : size === "medium" ? "45%" : "45%" }}>
+          {/* Category tag for non-large cards */}
+          {size !== "large" && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span
+                className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider"
+                style={{ color: accent, opacity: 0.8 }}
+              >
+                {catIcon}
+                {project.category}
+              </span>
+            </div>
+          )}
 
-          {/* Tags — stagger in on hover */}
-          <div className="flex flex-wrap gap-1.5 mb-5">
-            {project.technologies.slice(0, 4).map((tech, ti) => (
+          <div className="flex-1">
+            <h3
+              className="font-bold text-white mb-2 leading-tight transition-colors duration-300"
+              style={{
+                fontSize: size === "large" ? "1.4rem" : size === "medium" ? "1.15rem" : "1rem",
+              }}
+            >
+              {project.title}
+            </h3>
+            <p
+              className="text-sm leading-relaxed transition-all duration-300"
+              style={{
+                color: "rgba(255,255,255,0.45)",
+                display: size === "small" ? "-webkit-box" : undefined,
+                WebkitLineClamp: size === "small" ? 2 : undefined,
+                WebkitBoxOrient: size === "small" ? "vertical" : undefined,
+                overflow: size === "small" ? "hidden" : undefined,
+              }}
+            >
+              {project.description}
+            </p>
+          </div>
+
+          {/* Tech tags */}
+          <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
+            {project.technologies.slice(0, size === "large" ? 5 : 3).map((tech, ti) => (
               <span
                 key={tech}
-                className="text-[10px] font-mono px-2.5 py-1 rounded-full border transition-all duration-300"
+                className="text-[10px] font-mono px-2 py-0.5 rounded-md transition-all duration-300"
                 style={{
-                  borderColor: hovered ? `${accent}40` : "var(--border)",
-                  color: hovered ? accent : "var(--muted-foreground)",
-                  opacity: hovered ? 1 : 0.6,
-                  transform: hovered ? "translateY(0)" : "translateY(4px)",
-                  transitionDelay: hovered ? `${ti * 50}ms` : "0ms",
+                  background: hovered ? `${accent}15` : "rgba(255,255,255,0.05)",
+                  color: hovered ? accent : "rgba(255,255,255,0.35)",
+                  border: `1px solid ${hovered ? `${accent}25` : "rgba(255,255,255,0.06)"}`,
+                  transitionDelay: `${ti * 40}ms`,
                 }}
               >
                 {tech}
               </span>
             ))}
-            {project.technologies.length > 4 && (
-              <span className="text-[10px] font-mono px-2 py-1 text-muted-foreground/40">
-                +{project.technologies.length - 4}
+            {project.technologies.length > (size === "large" ? 5 : 3) && (
+              <span className="text-[10px] font-mono px-2 py-0.5 text-white/20">
+                +{project.technologies.length - (size === "large" ? 5 : 3)}
               </span>
             )}
           </div>
 
-          {/* CTA row */}
-          <div className="flex items-center justify-between">
+          {/* Bottom row */}
+          <div className="flex items-center justify-between mt-auto">
             <span
               className="flex items-center gap-2 text-xs font-medium transition-all duration-300"
-              style={{ color: hovered ? accent : "var(--muted-foreground)" }}
+              style={{ color: hovered ? accent : "rgba(255,255,255,0.3)" }}
             >
               <span
-                className="w-2 h-2 rounded-full transition-all duration-300"
-                style={{ background: accent, boxShadow: hovered ? `0 0 8px ${accent}` : "none" }}
+                className="w-1.5 h-1.5 rounded-full transition-all duration-500"
+                style={{
+                  background: accent,
+                  boxShadow: hovered ? `0 0 10px ${accent}` : "none",
+                }}
               />
-              View Project
+              View Details
               <ArrowRight
                 className="w-3.5 h-3.5 transition-transform duration-300"
-                style={{ transform: hovered ? "translateX(4px)" : "translateX(0)" }}
+                style={{
+                  transform: hovered ? "translateX(4px)" : "translateX(0)",
+                }}
               />
             </span>
 
@@ -312,7 +292,11 @@ function ProjectCard({
                 href={project.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                className="p-2 rounded-lg transition-all duration-300"
+                style={{
+                  color: hovered ? accent : "rgba(255,255,255,0.25)",
+                  background: hovered ? `${accent}10` : "transparent",
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -321,9 +305,9 @@ function ProjectCard({
           </div>
         </div>
 
-        {/* Bottom accent bar */}
+        {/* Bottom accent line */}
         <div
-          className="h-[2px] transition-all duration-500"
+          className="absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-700"
           style={{
             background: hovered
               ? `linear-gradient(90deg, transparent, ${accent}, transparent)`
@@ -336,15 +320,346 @@ function ProjectCard({
   );
 }
 
+/* ────── Smooth Project Detail Modal ────── */
+function ProjectDetailModal({
+  project,
+  isOpen,
+  onClose,
+}: {
+  project: Project | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const accent = project ? ACCENT_MAP[project.id] || "#7c5cfc" : "#7c5cfc";
+  const status = project ? STATUS_MAP[project.id] : null;
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleEsc);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, onClose]);
+
+  if (!project) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+          onClick={onClose}
+        >
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0"
+            style={{
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(20px)",
+            }}
+          />
+
+          {/* Modal */}
+          <motion.div
+            ref={modalRef}
+            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 400,
+              mass: 0.8,
+            }}
+            className="relative w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-[24px]"
+            style={{
+              background: "linear-gradient(180deg, rgba(20,20,30,0.98), rgba(10,10,18,0.99))",
+              border: `1px solid ${accent}25`,
+              boxShadow: `0 0 0 1px ${accent}15, 0 40px 100px -20px ${accent}25, 0 0 80px ${accent}08`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top glow line */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[1px]"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+              }}
+            />
+
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.6)",
+              }}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Scrollable content */}
+            <div className="overflow-y-auto max-h-[92vh] custom-scrollbar" data-lenis-prevent>
+              {/* Hero Image */}
+              <div className="relative h-[280px] sm:h-[340px] overflow-hidden">
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                  style={{ filter: "brightness(0.7)" }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(180deg, transparent 20%, rgba(10,10,18,0.95) 100%), linear-gradient(135deg, ${accent}20, transparent 60%)`,
+                  }}
+                />
+
+                {/* Title overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    {status && (
+                      <span
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-semibold uppercase tracking-wider"
+                        style={{
+                          background: `${status.color}15`,
+                          color: status.color,
+                          border: `1px solid ${status.color}30`,
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full animate-pulse"
+                          style={{ background: status.color }}
+                        />
+                        {status.text}
+                      </span>
+                    )}
+                    <span
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-wider"
+                      style={{
+                        background: `${accent}15`,
+                        color: accent,
+                        border: `1px solid ${accent}30`,
+                      }}
+                    >
+                      {CATEGORY_ICONS[project.category]}
+                      {project.category}
+                    </span>
+                  </div>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15, duration: 0.5 }}
+                    className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight"
+                  >
+                    {project.title}
+                  </motion.h2>
+                </div>
+              </div>
+
+              {/* Content body */}
+              <div className="p-6 sm:p-8 space-y-8">
+                {/* Overview */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h4
+                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
+                    style={{ color: accent }}
+                  >
+                    Overview
+                  </h4>
+                  <p className="text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
+                    {project.details.overview}
+                  </p>
+                </motion.div>
+
+                {/* Key Features */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h4
+                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
+                    style={{ color: accent }}
+                  >
+                    Key Features
+                  </h4>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {project.details.features.map((feature, fi) => (
+                      <motion.div
+                        key={fi}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + fi * 0.06 }}
+                        className="flex items-start gap-3 p-3 rounded-xl transition-all duration-300 hover:bg-white/[0.03]"
+                        style={{
+                          border: "1px solid rgba(255,255,255,0.04)",
+                        }}
+                      >
+                        <span
+                          className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-mono font-bold"
+                          style={{
+                            background: `${accent}15`,
+                            color: accent,
+                            border: `1px solid ${accent}20`,
+                          }}
+                        >
+                          {fi + 1}
+                        </span>
+                        <span className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
+                          {feature}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Technologies */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <h4
+                    className="text-xs font-mono uppercase tracking-[0.2em] mb-4"
+                    style={{ color: accent }}
+                  >
+                    Tech Stack
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {project.details.technologies.map((tech, ti) => (
+                      <motion.span
+                        key={tech}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.45 + ti * 0.04 }}
+                        className="px-4 py-2 rounded-xl text-sm font-mono transition-all duration-300 hover:scale-105"
+                        style={{
+                          background: `${accent}10`,
+                          color: accent,
+                          border: `1px solid ${accent}20`,
+                        }}
+                      >
+                        {tech}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Impact / Result */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: `linear-gradient(135deg, ${accent}08, transparent)`,
+                    border: `1px solid ${accent}15`,
+                  }}
+                >
+                  <h4
+                    className="text-xs font-mono uppercase tracking-[0.2em] mb-3"
+                    style={{ color: accent }}
+                  >
+                    Impact & Results
+                  </h4>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {project.details.content}
+                  </p>
+                </motion.div>
+
+                {/* CTA */}
+                {project.link && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.55 }}
+                    className="flex justify-center pt-2 pb-4"
+                  >
+                    <a
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-8 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
+                        color: "#000",
+                        boxShadow: `0 8px 30px ${accent}30`,
+                      }}
+                    >
+                      <Globe className="w-4 h-4" />
+                      Visit Live Project
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ────── Bento grid layout ────── */
+// Define sizes: first 2 are featured (large/medium), rest alternate
+const GRID_SIZES: ("large" | "medium" | "small")[] = [
+  "large",   // Tuku Go — hero card
+  "medium",  // PuffNMore — tall side card
+  "small",   // Campus Kart
+  "small",   // Mishras
+  "medium",  // Success Gateway — tall card
+  "large",   // Green Island UHI — another hero
+];
+
 /* ────── main section ────── */
-export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps) {
+export default function ProjectsSection({
+  onProjectClick: _externalClick,
+}: {
+  onProjectClick: (project: any) => void;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedProject(null), 300);
+  };
 
   const projects: Project[] = [
     {
       id: "tuku-go",
       title: "Tuku Go — Ride-hailing App",
+      category: "Mobile App",
       description:
         "Cross-platform Flutter app with real-time location tracking, integrated payments, and MVP architecture.",
       image: "projects/TukuGO.png",
@@ -369,6 +684,7 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
     {
       id: "puffnmore",
       title: "PuffNMore — E-Commerce Platform",
+      category: "E-Commerce",
       description:
         "$500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment. Production-grade storefront.",
       image: "projects/puffNmore.com.png",
@@ -393,6 +709,7 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
     {
       id: "campus-kart",
       title: "Campus Kart — P2P Marketplace",
+      category: "Marketplace",
       description:
         "Campus marketplace with real-time chat, seller verification, and full development lifecycle ownership.",
       image: "projects/campusKart.png",
@@ -417,6 +734,7 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
     {
       id: "mishras-enterprises",
       title: "Mishras Enterprises — Company Website",
+      category: "Business Site",
       description:
         "B2B company portal with service showcase, lead capture forms, and modern React build.",
       image: "projects/mishrasenterprises.in.png",
@@ -441,6 +759,7 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
     {
       id: "success-gateway",
       title: "Success Gateway — Coaching Institute",
+      category: "Education",
       description:
         "Static website with course portal, mobile-responsive design, and SEO optimization.",
       image: "projects/successgateway.co.in.png",
@@ -465,6 +784,7 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
     {
       id: "green-island-uhi",
       title: "Green Island — Urban Heat Visualizer",
+      category: "AI / Research",
       description:
         "Data-driven platform to detect, visualize, and mitigate Urban Heat Islands using satellite data and AI.",
       image: "projects/UHI.png",
@@ -492,58 +812,98 @@ export default function ProjectsSection({ onProjectClick }: ProjectsSectionProps
   ];
 
   return (
-    <section ref={sectionRef} id="projects" className="py-24 relative overflow-hidden">
-      {/* Subtle gradient backdrop */}
-      <div className="absolute inset-0 pointer-events-none opacity-30">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[1]">
-        {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4"
-          >
-            Featured Projects
-          </motion.h2>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={isInView ? { scaleX: 1 } : {}}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className="w-24 h-1 bg-primary mx-auto rounded-full origin-left"
+    <>
+      <section ref={sectionRef} id="projects" className="py-24 relative overflow-hidden">
+        {/* Ambient background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20"
+            style={{ background: "rgba(124, 92, 252, 0.15)" }}
           />
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-muted-foreground mt-6 max-w-3xl mx-auto text-lg"
-          >
-            Production-grade applications with measurable impact. Mobile-first architecture,
-            AI/ML integration, and data engineering at scale.
-          </motion.p>
-        </motion.div>
-
-        {/* Project grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
-          {projects.map((project, index) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              index={index}
-              onProjectClick={onProjectClick}
-            />
-          ))}
+          <div
+            className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-15"
+            style={{ background: "rgba(0, 229, 204, 0.1)" }}
+          />
         </div>
-      </div>
-    </section>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[1]">
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
+              style={{
+                background: "rgba(124, 92, 252, 0.08)",
+                border: "1px solid rgba(124, 92, 252, 0.15)",
+              }}
+            >
+              <Layers className="w-3.5 h-3.5" style={{ color: "#7c5cfc" }} />
+              <span className="text-xs font-mono uppercase tracking-widest" style={{ color: "#7c5cfc" }}>
+                Portfolio
+              </span>
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4"
+            >
+              Featured Projects
+            </motion.h2>
+
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={isInView ? { scaleX: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className="w-24 h-[2px] mx-auto rounded-full origin-left"
+              style={{
+                background: "linear-gradient(90deg, #7c5cfc, #00e5cc)",
+              }}
+            />
+
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-6 max-w-3xl mx-auto text-lg"
+              style={{ color: "rgba(255,255,255,0.45)" }}
+            >
+              Production-grade applications with measurable impact. Mobile-first architecture,
+              AI/ML integration, and data engineering at scale.
+            </motion.p>
+          </motion.div>
+
+          {/* Bento Grid */}
+          <div
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px] sm:auto-rows-[300px]"
+          >
+            {projects.map((project, index) => (
+              <BentoCard
+                key={project.id}
+                project={project}
+                index={index}
+                size={GRID_SIZES[index] || "small"}
+                onProjectClick={handleProjectClick}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Project Detail Modal */}
+      <ProjectDetailModal
+        project={selectedProject}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </>
   );
 }

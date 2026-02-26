@@ -167,128 +167,133 @@ const FRAG = `
 `;
 
 interface WebGLBackgroundProps {
-    isDark: boolean;
+  isDark: boolean;
 }
 
 export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const glRef = useRef<WebGLRenderingContext | null>(null);
-    const uniformsRef = useRef<Record<string, WebGLUniformLocation | null>>({});
-    const mouseRef = useRef({ x: 0.5, y: 0.5 });
-    const scrollRef = useRef(0);
-    const ripplesRef = useRef<{ x: number; y: number; time: number }[]>([]);
-    const startTimeRef = useRef(performance.now() / 1000);
-    const rafRef = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const uniformsRef = useRef<Record<string, WebGLUniformLocation | null>>({});
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const scrollRef = useRef(0);
+  const ripplesRef = useRef<{ x: number; y: number; time: number }[]>([]);
+  const startTimeRef = useRef(performance.now() / 1000);
+  const rafRef = useRef(0);
 
-    const initGL = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return false;
-        const gl = canvas.getContext("webgl", { alpha: false, antialias: false });
-        if (!gl) return false;
-        glRef.current = gl;
+  const initGL = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return false;
+    const gl = canvas.getContext("webgl", { alpha: false, antialias: false });
+    if (!gl) return false;
+    glRef.current = gl;
 
-        const vs = gl.createShader(gl.VERTEX_SHADER)!;
-        gl.shaderSource(vs, VERT);
-        gl.compileShader(vs);
-        const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-        gl.shaderSource(fs, FRAG);
-        gl.compileShader(fs);
-        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-            console.error("Ocean frag:", gl.getShaderInfoLog(fs));
-            return false;
-        }
-        const prog = gl.createProgram()!;
-        gl.attachShader(prog, vs);
-        gl.attachShader(prog, fs);
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-            console.error("Ocean link:", gl.getProgramInfoLog(prog));
-            return false;
-        }
-        gl.useProgram(prog);
+    const vs = gl.createShader(gl.VERTEX_SHADER)!;
+    gl.shaderSource(vs, VERT);
+    gl.compileShader(vs);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
+    gl.shaderSource(fs, FRAG);
+    gl.compileShader(fs);
+    if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+      console.error("Ocean frag:", gl.getShaderInfoLog(fs));
+      return false;
+    }
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error("Ocean link:", gl.getProgramInfoLog(prog));
+      return false;
+    }
+    gl.useProgram(prog);
 
-        const buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
-        const a = gl.getAttribLocation(prog, "a_position");
-        gl.enableVertexAttribArray(a);
-        gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
+    const a = gl.getAttribLocation(prog, "a_position");
+    gl.enableVertexAttribArray(a);
+    gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
 
-        for (const n of ["u_resolution", "u_time", "u_mouse", "u_scroll", "u_isDark"])
-            uniformsRef.current[n] = gl.getUniformLocation(prog, n);
-        for (let i = 0; i < 5; i++)
-            uniformsRef.current[`u_ripples[${i}]`] = gl.getUniformLocation(prog, `u_ripples[${i}]`);
+    for (const n of ["u_resolution", "u_time", "u_mouse", "u_scroll", "u_isDark"])
+      uniformsRef.current[n] = gl.getUniformLocation(prog, n);
+    for (let i = 0; i < 5; i++)
+      uniformsRef.current[`u_ripples[${i}]`] = gl.getUniformLocation(prog, `u_ripples[${i}]`);
 
-        return true;
-    }, []);
+    return true;
+  }, []);
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !initGL()) return;
-        const gl = glRef.current!;
-        const u = uniformsRef.current;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !initGL()) return;
+    const gl = glRef.current!;
+    const u = uniformsRef.current;
 
-        const resize = () => {
-            const dpr = Math.min(window.devicePixelRatio, 1.5);
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            canvas.style.width = `${window.innerWidth}px`;
-            canvas.style.height = `${window.innerHeight}px`;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        };
-        resize();
-        window.addEventListener("resize", resize);
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio, 1.5);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+    resize();
+    window.addEventListener("resize", resize);
 
-        const onMouse = (e: MouseEvent) => {
-            mouseRef.current.x = e.clientX / window.innerWidth;
-            mouseRef.current.y = 1.0 - e.clientY / window.innerHeight;
-        };
-        window.addEventListener("mousemove", onMouse);
+    const onMouse = (e: MouseEvent) => {
+      mouseRef.current.x = e.clientX / window.innerWidth;
+      mouseRef.current.y = 1.0 - e.clientY / window.innerHeight;
+    };
+    window.addEventListener("mousemove", onMouse);
 
-        const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight;
-        const onScroll = () => { scrollRef.current = window.scrollY / (maxScroll() || 1); };
-        window.addEventListener("scroll", onScroll, { passive: true });
+    const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight;
+    const onScroll = () => { scrollRef.current = window.scrollY / (maxScroll() || 1); };
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-        const onClick = (e: MouseEvent) => {
-            const now = performance.now() / 1000 - startTimeRef.current;
-            ripplesRef.current.push({
-                x: e.clientX / window.innerWidth,
-                y: 1.0 - e.clientY / window.innerHeight,
-                time: now,
-            });
-            if (ripplesRef.current.length > 5) ripplesRef.current.shift();
-        };
-        window.addEventListener("click", onClick);
+    const onClick = (e: MouseEvent) => {
+      const now = performance.now() / 1000 - startTimeRef.current;
+      ripplesRef.current.push({
+        x: e.clientX / window.innerWidth,
+        y: 1.0 - e.clientY / window.innerHeight,
+        time: now,
+      });
+      if (ripplesRef.current.length > 5) ripplesRef.current.shift();
+    };
+    window.addEventListener("click", onClick);
 
-        const render = () => {
-            const t = performance.now() / 1000 - startTimeRef.current;
-            gl.uniform2f(u["u_resolution"]!, canvas.width, canvas.height);
-            gl.uniform1f(u["u_time"]!, t);
-            gl.uniform2f(u["u_mouse"]!, mouseRef.current.x, mouseRef.current.y);
-            gl.uniform1f(u["u_scroll"]!, scrollRef.current);
-            gl.uniform1f(u["u_isDark"]!, isDark ? 1.0 : 0.0);
-            for (let i = 0; i < 5; i++) {
-                const rp = ripplesRef.current[i];
-                gl.uniform3f(u[`u_ripples[${i}]`]!, rp?.x ?? 0, rp?.y ?? 0, rp?.time ?? 0);
-            }
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-            rafRef.current = requestAnimationFrame(render);
-        };
-        rafRef.current = requestAnimationFrame(render);
+    const render = () => {
+      const t = performance.now() / 1000 - startTimeRef.current;
+      gl.uniform2f(u["u_resolution"]!, canvas.width, canvas.height);
+      gl.uniform1f(u["u_time"]!, t);
+      gl.uniform2f(u["u_mouse"]!, mouseRef.current.x, mouseRef.current.y);
+      gl.uniform1f(u["u_scroll"]!, scrollRef.current);
+      gl.uniform1f(u["u_isDark"]!, isDark ? 1.0 : 0.0);
+      for (let i = 0; i < 5; i++) {
+        const rp = ripplesRef.current[i];
+        gl.uniform3f(u[`u_ripples[${i}]`]!, rp?.x ?? 0, rp?.y ?? 0, rp?.time ?? 0);
+      }
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      rafRef.current = requestAnimationFrame(render);
+    };
+    rafRef.current = requestAnimationFrame(render);
 
-        return () => {
-            window.removeEventListener("resize", resize);
-            window.removeEventListener("mousemove", onMouse);
-            window.removeEventListener("scroll", onScroll);
-            window.removeEventListener("click", onClick);
-            cancelAnimationFrame(rafRef.current);
-        };
-    }, [initGL, isDark]);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMouse);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("click", onClick);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [initGL, isDark]);
 
-    return (
-        <canvas
-            ref={canvasRef}
-            style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }}
-        />
-    );
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+        pointerEvents: "none", zIndex: 0,
+        opacity: isDark ? 1 : 0.12,
+        transition: "opacity 0.5s ease",
+      }}
+    />
+  );
 }

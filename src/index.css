@@ -47,6 +47,17 @@ html.lenis body {
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
 
+  /* ─── Liquid Intelligence: Light Mode ─── */
+  --li-bg: #F5F0E8;
+  --li-bg-deep: #EDE8DC;
+  --li-text: #0D0B1A;
+  --li-text-dim: #3D3A52;
+  --li-indigo: #3730A3;
+  --li-gold: #D97706;
+  --li-glass: rgba(13, 11, 26, 0.04);
+  --li-glass-border: rgba(13, 11, 26, 0.08);
+  --li-highlight: #3730A3;
+
   /* Custom colors for portfolio */
   --royal-blue: hsl(221, 83%, 53%);
   --dark-slate: hsl(215, 25%, 27%);
@@ -102,6 +113,17 @@ html.lenis body {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* ─── Liquid Intelligence: Dark Mode ─── */
+  --li-bg: #050508;
+  --li-bg-deep: #0a0a10;
+  --li-text: #F0F4FF;
+  --li-text-dim: rgba(240, 244, 255, 0.5);
+  --li-indigo: #818CF8;
+  --li-gold: #F59E0B;
+  --li-glass: rgba(240, 244, 255, 0.04);
+  --li-glass-border: rgba(240, 244, 255, 0.08);
+  --li-highlight: #F59E0B;
 }
 
 /* Cyber Theme Variant */
@@ -133,8 +155,11 @@ html.lenis body {
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
-    font-family: "Inter", sans-serif;
+    @apply font-sans antialiased;
+    font-family: "Space Grotesk", sans-serif;
+    background: var(--li-bg);
+    color: var(--li-text);
+    -webkit-font-smoothing: antialiased;
   }
 
   html {
@@ -432,6 +457,29 @@ html.lenis body {
   button:active,
   a:active {
     transform: scale(0.98);
+  }
+
+  /* Custom scrollbar for project modal */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   }
 }
 

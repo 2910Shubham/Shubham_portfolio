@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import CareerTimeline from "@/components/career-timeline";
 import WebGLBackground from "@/components/webgl-background";
 import MouseFollower from "@/components/mouse-follower";
-import OceanCompanion from "@/components/ocean-companion";
+import FloatingMascot from "@/components/floating-mascot";
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll";
 
 interface Project {
@@ -77,15 +77,25 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen relative" style={{ background: "var(--li-bg)" }}>
+      {/* Light mode atmospheric gradient overlay */}
+      {!isDark && (
+        <div className="fixed inset-0 pointer-events-none z-[1]" style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 70% 40%, rgba(79,70,229,0.05) 0%, transparent 70%),
+            radial-gradient(ellipse 50% 40% at 15% 85%, rgba(217,119,6,0.04) 0%, transparent 60%)
+          `,
+        }} />
+      )}
+
       {/* WebGL Interactive Particle Background */}
       <WebGLBackground isDark={isDark} />
 
       {/* Custom Mouse Follower */}
       <MouseFollower />
 
-      {/* Floating Cat Companion — follows user like an octopus */}
-      <OceanCompanion />
+      {/* Floating Mascot — starts in hero, follows user on scroll */}
+      <FloatingMascot />
 
       {/* Content (above the canvas) */}
       <div className="relative z-10">

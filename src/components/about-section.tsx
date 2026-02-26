@@ -91,18 +91,16 @@ export default function AboutSection() {
             viewport={{ once: true }}
           >
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8">
-              Full-stack engineer specializing in{" "}
+              Versatile Full-Stack Engineer{" "}
               <span className="text-foreground font-medium">
-                mobile-first development
+                mobile-first development{" "}
               </span>
-              . I build production-grade applications that solve real-world
-              problems — from cross-platform mobile apps to AI-powered
-              geospatial platforms.
+              dedicated to building high-performance web applications from the ground up.
             </p>
 
             <p className="text-base text-muted-foreground leading-relaxed mb-10">
-              I care about clean code, performance, and user experience.
-              Every project I ship is built to work at scale.
+              I specialize in architecting fluid user interfaces and scalable backend architectures,
+              managing the entire development lifecycle from initial concept to final deployment
             </p>
 
             {/* Skill pills */}
