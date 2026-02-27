@@ -12,6 +12,11 @@ function getViewportCenter() {
   return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 }
 
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < 768;
+}
+
 export default function StartupLoader({ visible, onFinish }: StartupLoaderProps) {
   const [phase, setPhase] = useState<"spin" | "fly">("spin");
   const [isDark, setIsDark] = useState(true);
@@ -35,19 +40,28 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
       top: center.y,
       x: 0,
       y: 0,
-      rotate: [0, 160, 320],
-      scale: [0.98, 1, 0.98],
+      rotate: [0, 720],
+      scale: 1,
     };
   }, [phase, center.x, center.y, target.x, target.y]);
 
   useEffect(() => {
     if (!visible) return;
 
-    const viewportCenter = getViewportCenter();
-    setCenter(viewportCenter);
+    if (isMobileViewport()) {
+      setCenter({ x: window.innerWidth * 0.22, y: window.innerHeight * 0.2 });
+      setTarget({ x: window.innerWidth * 0.8, y: window.innerHeight * 0.82 });
+    } else {
+      setCenter(getViewportCenter());
+    }
     setPhase("spin");
 
     const syncTarget = () => {
+      if (isMobileViewport()) {
+        setTarget({ x: window.innerWidth * 0.8, y: window.innerHeight * 0.82 });
+        return;
+      }
+
       const orb = document.getElementById("orbital-system");
       if (orb) {
         const rect = orb.getBoundingClientRect();
@@ -61,8 +75,8 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
     const flyTimer = window.setTimeout(() => {
       syncTarget();
       setPhase("fly");
-    }, 1150);
-    const finishTimer = window.setTimeout(() => onFinish(), 2000);
+    }, 1800);
+    const finishTimer = window.setTimeout(() => onFinish(), 2660);
 
     return () => {
       window.clearTimeout(flyTimer);
@@ -72,6 +86,12 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
 
   useEffect(() => {
     const onResize = () => {
+      if (isMobileViewport()) {
+        setCenter({ x: window.innerWidth * 0.22, y: window.innerHeight * 0.2 });
+        setTarget({ x: window.innerWidth * 0.8, y: window.innerHeight * 0.82 });
+        return;
+      }
+
       const nextCenter = getViewportCenter();
       setCenter(nextCenter);
       if (phase !== "fly") {
@@ -133,7 +153,7 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
               transition={
                 phase === "fly"
                   ? { duration: 0.86, ease: [0.22, 1, 0.36, 1] }
-                  : { duration: 1.08, repeat: Infinity, ease: "easeInOut" }
+                  : { duration: 1.8, repeat: 0, ease: "linear" }
               }
               style={{
                 position: "absolute",

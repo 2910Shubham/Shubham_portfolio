@@ -154,6 +154,13 @@ html.lenis body {
     @apply border-border;
   }
 
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
   body {
     @apply font-sans antialiased;
     font-family: "Space Grotesk", sans-serif;

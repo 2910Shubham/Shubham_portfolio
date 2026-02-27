@@ -232,9 +232,15 @@ const FloatingMascot = memo(function FloatingMascot() {
             const totalY = baseY + bob + s.pushY + s.fleeY;
             const rotation = s.tiltX * 0.3 * p;
 
-            // Clamp to viewport
-            const clampedX = Math.max(60, Math.min(vw - 60, totalX));
-            const clampedY = Math.max(60, Math.min(vh - 60, totalY));
+            // Clamp to viewport using actual mascot size so it never pushes layout horizontally.
+            const heroWidth = isMobile ? 160 : vw >= 1024 ? 280 : 220;
+            const floatingWidth = isMobile ? 88 : 154;
+            const currentWidth = heroWidth + p * (floatingWidth - heroWidth);
+            const halfWidth = (currentWidth * scale) / 2 + 8;
+            const halfHeight = (currentWidth * 1.2 * scale) / 2 + 8;
+
+            const clampedX = Math.max(halfWidth, Math.min(vw - halfWidth, totalX));
+            const clampedY = Math.max(halfHeight, Math.min(vh - halfHeight, totalY));
 
             el.style.left = `${clampedX}px`;
             el.style.top = `${clampedY}px`;

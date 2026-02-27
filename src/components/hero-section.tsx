@@ -256,6 +256,10 @@ const HeroSection = memo(function HeroSection() {
         @keyframes pulse-line { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.15; } }
         .hero-grid { grid-template-columns: 1fr 420px; }
         @media (max-width: 1023px) { .hero-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 767px) {
+          .hero-safe-wrap { overflow-x: clip; }
+          .hero-social-row { flex-wrap: wrap; row-gap: 10px; }
+        }
       `}</style>
 
       <GrainOverlay />
@@ -272,7 +276,7 @@ const HeroSection = memo(function HeroSection() {
         )}
 
         {/* ─── Grid container ─── */}
-        <div style={{ maxWidth: 1400, width: "100%", margin: "0 auto", padding: "0 max(40px, 5vw)" }}>
+        <div className="hero-safe-wrap" style={{ maxWidth: 1400, width: "100%", margin: "0 auto", padding: "0 clamp(16px, 5vw, 40px)" }}>
           <div className="grid hero-grid items-center gap-8" style={{ minHeight: "100vh" }}>
 
             {/* ═══ LEFT COLUMN ═══ */}
@@ -359,7 +363,7 @@ const HeroSection = memo(function HeroSection() {
               <motion.div
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.8 }}
-                className="flex items-center gap-4 mb-5">
+                className="hero-social-row flex items-center gap-4 mb-5">
                 {[
                   { icon: Github, href: "https://github.com/2910Shubham", label: "GitHub" },
                   { icon: Linkedin, href: "https://www.linkedin.com/in/shubham-kumar-mishra-/", label: "LinkedIn" },
