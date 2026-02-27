@@ -14,14 +14,9 @@ function getViewportCenter() {
 
 export default function StartupLoader({ visible, onFinish }: StartupLoaderProps) {
   const [phase, setPhase] = useState<"spin" | "fly">("spin");
-  const [isDark, setIsDark] = useState(() =>
-    typeof document !== "undefined" ? document.documentElement.classList.contains("dark") : true,
-  );
-  const [center, setCenter] = useState(getViewportCenter);
-  const [target, setTarget] = useState<{ x: number; y: number }>(() => {
-    if (typeof window === "undefined") return { x: 980, y: 420 };
-    return { x: window.innerWidth * 0.76, y: window.innerHeight * 0.45 };
-  });
+  const [isDark, setIsDark] = useState(true);
+  const [center, setCenter] = useState<{ x: number; y: number }>({ x: 720, y: 420 });
+  const [target, setTarget] = useState<{ x: number; y: number }>({ x: 980, y: 420 });
 
   const mascotAnim = useMemo(() => {
     if (phase === "fly") {
@@ -48,6 +43,8 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
   useEffect(() => {
     if (!visible) return;
 
+    const viewportCenter = getViewportCenter();
+    setCenter(viewportCenter);
     setPhase("spin");
 
     const syncTarget = () => {

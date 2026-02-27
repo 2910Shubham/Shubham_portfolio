@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, Zap, MapPin, Users } from "lucide-react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/navigation";
 
 export default function GreenIslandPage() {
-  const [, navigate] = useLocation();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-background">
@@ -11,7 +11,7 @@ export default function GreenIslandPage() {
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
           <button
-            onClick={() => navigate("/#green-island-uhi")}
+            onClick={() => router.push("/#green-island-uhi")}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
             aria-label="Go back to Green Island section"
           >
