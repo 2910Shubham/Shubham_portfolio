@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Code, Trophy, Briefcase, Award, Zap } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const careerMilestones = [
   {
@@ -76,7 +76,7 @@ const getIcon = (type: string) => {
 };
 
 /* ─── Single timeline item with its own scroll tracking ─── */
-function TimelineItem({
+function DesktopTimelineItem({
   milestone,
   index,
 }: {
@@ -142,8 +142,65 @@ function TimelineItem({
   );
 }
 
+/* ─── Lightweight mobile item animation ─── */
+function MobileTimelineItem({
+  milestone,
+  index,
+}: {
+  milestone: (typeof careerMilestones)[number];
+  index: number;
+}) {
+  return (
+    <div className="relative flex">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.22, delay: Math.min(index * 0.03, 0.18) }}
+        viewport={{ once: true, amount: 0.55 }}
+        className="absolute left-0 top-2 -translate-x-[3px] z-10"
+      >
+        <div className="w-3 h-3 rounded-full bg-foreground border-2 border-background shadow-[0_0_0_4px_rgba(255,255,255,0.04)]" />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{
+          duration: 0.34,
+          ease: [0.22, 1, 0.36, 1],
+          delay: Math.min(index * 0.035, 0.2),
+        }}
+        viewport={{ once: true, amount: 0.35 }}
+        className="ml-8 w-full p-5 rounded-xl border border-border bg-background/55 backdrop-blur-sm"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-mono text-muted-foreground tracking-wider uppercase">
+            {milestone.date}
+          </span>
+          <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground">
+            {getIcon(milestone.type)}
+          </div>
+        </div>
+
+        <h3 className="text-base font-bold text-foreground mb-2">
+          {milestone.title}
+        </h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {milestone.story}
+        </p>
+      </motion.div>
+    </div>
+  );
+}
+
 /* ─── Animated vertical line that grows with scroll ─── */
-function GrowingLine() {
+function GrowingLine({ isMobile }: { isMobile: boolean }) {
+  if (isMobile) {
+    return (
+      <div className="absolute left-0 top-0 bottom-0 w-px bg-border/70" />
+    );
+  }
+
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -166,6 +223,22 @@ function GrowingLine() {
 
 /* ─── Main component ─── */
 export default function CareerTimeline() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setIsMobile(media.matches);
+    onChange();
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    }
+
+    media.addListener(onChange);
+    return () => media.removeListener(onChange);
+  }, []);
+
   return (
     <section id="career" className="relative py-16 lg:py-20">
       <div className="max-w-4xl mx-auto px-6 sm:px-10 lg:px-8">
@@ -192,15 +265,15 @@ export default function CareerTimeline() {
 
         {/* Timeline */}
         <div className="relative">
-          <GrowingLine />
+          <GrowingLine isMobile={isMobile} />
 
-          <div className="space-y-10 md:space-y-16">
+          <div className="space-y-7 md:space-y-16">
             {careerMilestones.map((milestone, index) => (
-              <TimelineItem
-                key={index}
-                milestone={milestone}
-                index={index}
-              />
+              isMobile ? (
+                <MobileTimelineItem key={index} milestone={milestone} index={index} />
+              ) : (
+                <DesktopTimelineItem key={index} milestone={milestone} index={index} />
+              )
             ))}
           </div>
         </div>

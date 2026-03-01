@@ -48,7 +48,7 @@ export default function ContactSection() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("https://formsubmit.co/2910viwan@gmail.com", {
+      const response = await fetch("https://formsubmit.co/11416ddb6de5e013bfef4560e848e888", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
