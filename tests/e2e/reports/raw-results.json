@@ -1,0 +1,161 @@
+{
+  "generatedAt": "2026-03-01T10:16:07.585Z",
+  "projects": {
+    "Desktop High": {
+      "projectName": "Desktop High",
+      "expectedTier": "high",
+      "tests": {
+        "Performance metrics are captured for this device tier in a reproducible way": {
+          "status": "passed"
+        },
+        "Correct tier is detected for each device class": {
+          "status": "passed"
+        },
+        "Correct quality values are applied per device tier": {
+          "status": "passed"
+        },
+        "RAF loop is running and incrementing frames over time": {
+          "status": "passed"
+        },
+        "RAF pauses when tab is hidden and resumes when visible again": {
+          "status": "passed"
+        },
+        "Touch interactions trigger ripple behavior and keep rendering stable": {
+          "status": "skipped"
+        },
+        "Floating mascot is present and visible on every tier": {
+          "status": "passed"
+        },
+        "Frame skip ratio matches expected behavior for each tier": {
+          "status": "passed"
+        }
+      },
+      "performance": {
+        "loadTimeMs": 6774.10000000149,
+        "heapMb": 124.93133544921875,
+        "fcpMs": 6036,
+        "lcpMs": 7940,
+        "totalBlockingTimeMs": 921,
+        "longTasksCount": 5,
+        "fps": 6,
+        "frameTimeMs": 166.66666666666666
+      },
+      "actualTier": "high",
+      "quality": {
+        "currentQuality": 1,
+        "pixelRatio": 1,
+        "rippleSlots": 5,
+        "fps": 15,
+        "frameSkipRatio": 0
+      },
+      "frameWindow": {
+        "framesIn1s": 15,
+        "frameSkipRatio": 0
+      }
+    },
+    "Tablet Mid": {
+      "projectName": "Tablet Mid",
+      "expectedTier": "mid",
+      "tests": {
+        "Performance metrics are captured for this device tier in a reproducible way": {
+          "status": "passed"
+        },
+        "Correct tier is detected for each device class": {
+          "status": "passed"
+        },
+        "Correct quality values are applied per device tier": {
+          "status": "passed"
+        },
+        "RAF loop is running and incrementing frames over time": {
+          "status": "passed"
+        },
+        "RAF pauses when tab is hidden and resumes when visible again": {
+          "status": "passed"
+        },
+        "Touch interactions trigger ripple behavior and keep rendering stable": {
+          "status": "skipped"
+        },
+        "Floating mascot is present and visible on every tier": {
+          "status": "passed"
+        },
+        "Frame skip ratio matches expected behavior for each tier": {
+          "status": "passed"
+        }
+      },
+      "performance": {
+        "loadTimeMs": 1174,
+        "heapMb": 124.93133544921875,
+        "fcpMs": 888,
+        "lcpMs": 2120,
+        "totalBlockingTimeMs": 716,
+        "longTasksCount": 5,
+        "fps": 8,
+        "frameTimeMs": 125
+      },
+      "actualTier": "mid",
+      "quality": {
+        "currentQuality": 0.6,
+        "pixelRatio": 1,
+        "rippleSlots": 3,
+        "fps": 18,
+        "frameSkipRatio": 0
+      },
+      "frameWindow": {
+        "framesIn1s": 18,
+        "frameSkipRatio": 0
+      }
+    },
+    "Mobile Low": {
+      "projectName": "Mobile Low",
+      "expectedTier": "low",
+      "tests": {
+        "Performance metrics are captured for this device tier in a reproducible way": {
+          "status": "passed"
+        },
+        "Correct tier is detected for each device class": {
+          "status": "passed"
+        },
+        "Correct quality values are applied per device tier": {
+          "status": "passed"
+        },
+        "RAF loop is running and incrementing frames over time": {
+          "status": "passed"
+        },
+        "RAF pauses when tab is hidden and resumes when visible again": {
+          "status": "passed"
+        },
+        "Touch interactions trigger ripple behavior and keep rendering stable": {
+          "status": "passed"
+        },
+        "Floating mascot is present and visible on every tier": {
+          "status": "passed"
+        },
+        "Frame skip ratio matches expected behavior for each tier": {
+          "status": "passed"
+        }
+      },
+      "performance": {
+        "loadTimeMs": 1274.699999999255,
+        "heapMb": 117.30194091796875,
+        "fcpMs": 984,
+        "lcpMs": 2124,
+        "totalBlockingTimeMs": 618,
+        "longTasksCount": 5,
+        "fps": 38,
+        "frameTimeMs": 26.31578947368421
+      },
+      "actualTier": "low",
+      "quality": {
+        "currentQuality": 0.3,
+        "pixelRatio": 0.75,
+        "rippleSlots": 2,
+        "fps": 31,
+        "frameSkipRatio": 0.32967032967032966
+      },
+      "frameWindow": {
+        "framesIn1s": 31,
+        "frameSkipRatio": 0.32967032967032966
+      }
+    }
+  }
+}

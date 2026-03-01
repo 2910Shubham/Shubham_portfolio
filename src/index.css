@@ -551,3 +551,11 @@ html.lenis body {
     display: none;
   }
 }
+
+@keyframes tapRipple {
+  to {
+    width: 80px;
+    height: 80px;
+    opacity: 0;
+  }
+}

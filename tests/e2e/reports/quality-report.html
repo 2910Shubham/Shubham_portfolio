@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quality Tier Report</title>
+  <style>
+    body { margin:0; font-family: Inter, Segoe UI, sans-serif; background:#0a0a1a; color:#e0e0e0; }
+    .wrap { max-width:1200px; margin:0 auto; padding:24px; }
+    h1,h2 { margin:0 0 12px; }
+    h1 { font-size:28px; color:#5c6bc0; }
+    h2 { font-size:18px; color:#c5cae9; margin-top:24px; }
+    .meta { opacity:.8; margin-bottom:16px; font-size:13px; }
+    .card { background:#16213e; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { border-bottom:1px solid rgba(255,255,255,.08); padding:10px; text-align:left; vertical-align:top; }
+    th { color:#c5cae9; font-weight:600; }
+    .ok { color:#4caf50; font-weight:600; }
+    .bad { color:#f44336; font-weight:600; }
+    .na { color:#ff9800; font-weight:600; }
+    .err { margin-top:6px; color:#ffb4b4; font-size:11px; line-height:1.3; white-space:pre-wrap; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .metric-card { background:rgba(255,255,255,.03); border-radius:10px; padding:12px; margin-bottom:12px; }
+    .metric-card h4 { margin:0 0 8px; color:#c5cae9; font-size:14px; }
+    .bar-wrap { display:grid; grid-template-columns:120px 1fr 80px; gap:10px; align-items:center; margin:8px 0; }
+    .bar-track { background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; height:12px; }
+    .bar { height:100%; border-radius:999px; }
+    .bar.green { background:#4caf50; }
+    .bar.amber { background:#ff9800; }
+    .bar.red { background:#f44336; }
+    .bar-label { font-size:12px; color:#c5cae9; }
+    .bar-value { font-size:12px; text-align:right; opacity:.9; }
+    ul { margin:8px 0 0 18px; padding:0; }
+    li { margin:6px 0; line-height:1.4; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Adaptive Quality Validation Report</h1>
+    <div class="meta">Generated: 2026-03-01T10:16:07.585Z</div>
+
+    <div class="card">
+      <h2>Section 1: Tier Detection Summary</h2>
+      <table>
+        <thead><tr><th>Device</th><th>Expected Tier</th><th>Actual Tier</th><th>Status</th></tr></thead>
+        <tbody><tr>
+      <td>Desktop High</td>
+      <td>high</td>
+      <td>high</td>
+      <td><span class="ok">✅ PASS</span></td>
+    </tr><tr>
+      <td>Tablet Mid</td>
+      <td>mid</td>
+      <td>mid</td>
+      <td><span class="ok">✅ PASS</span></td>
+    </tr><tr>
+      <td>Mobile Low</td>
+      <td>low</td>
+      <td>low</td>
+      <td><span class="ok">✅ PASS</span></td>
+    </tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Section 2: Quality Values Table</h2>
+      <table>
+        <thead><tr><th>Metric</th><th>High</th><th>Mid</th><th>Low</th></tr></thead>
+        <tbody>
+    <tr><td>u_quality</td><td>1.0</td><td>0.6</td><td>0.3</td></tr>
+    <tr><td>Pixel Ratio</td><td>1.00</td><td>1.00</td><td>0.75</td></tr>
+    <tr><td>FPS (measured)</td><td>15</td><td>18</td><td>31</td></tr>
+    <tr><td>Frame Skip</td><td>0%</td><td>0%</td><td>33%</td></tr>
+    <tr><td>Ripple Slots</td><td>5</td><td>3</td><td>2</td></tr>
+  </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Section 3: Performance Comparison</h2>
+      <div class="grid"><div class="metric-card"><h4>Largest Contentful Paint (ms)</h4><div class="bar-wrap">
+          <div class="bar-label">Desktop High</div>
+          <div class="bar-track"><div class="bar red" style="width:100%"></div></div>
+          <div class="bar-value">7940.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Tablet Mid</div>
+          <div class="bar-track"><div class="bar green" style="width:26.700251889168765%"></div></div>
+          <div class="bar-value">2120.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Mobile Low</div>
+          <div class="bar-track"><div class="bar green" style="width:26.750629722921914%"></div></div>
+          <div class="bar-value">2124.00</div>
+        </div></div><div class="metric-card"><h4>JS Heap Size (MB)</h4><div class="bar-wrap">
+          <div class="bar-label">Desktop High</div>
+          <div class="bar-track"><div class="bar amber" style="width:100%"></div></div>
+          <div class="bar-value">124.93</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Tablet Mid</div>
+          <div class="bar-track"><div class="bar amber" style="width:100%"></div></div>
+          <div class="bar-value">124.93</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Mobile Low</div>
+          <div class="bar-track"><div class="bar amber" style="width:93.89312977099237%"></div></div>
+          <div class="bar-value">117.30</div>
+        </div></div><div class="metric-card"><h4>Total Blocking Time (ms)</h4><div class="bar-wrap">
+          <div class="bar-label">Desktop High</div>
+          <div class="bar-track"><div class="bar red" style="width:100%"></div></div>
+          <div class="bar-value">921.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Tablet Mid</div>
+          <div class="bar-track"><div class="bar red" style="width:77.74158523344191%"></div></div>
+          <div class="bar-value">716.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Mobile Low</div>
+          <div class="bar-track"><div class="bar red" style="width:67.10097719869707%"></div></div>
+          <div class="bar-value">618.00</div>
+        </div></div><div class="metric-card"><h4>Long Tasks Count</h4><div class="bar-wrap">
+          <div class="bar-label">Desktop High</div>
+          <div class="bar-track"><div class="bar green" style="width:100%"></div></div>
+          <div class="bar-value">5.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Tablet Mid</div>
+          <div class="bar-track"><div class="bar green" style="width:100%"></div></div>
+          <div class="bar-value">5.00</div>
+        </div><div class="bar-wrap">
+          <div class="bar-label">Mobile Low</div>
+          <div class="bar-track"><div class="bar green" style="width:100%"></div></div>
+          <div class="bar-value">5.00</div>
+        </div></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Section 4: Test Results Grid</h2>
+      <table>
+        <thead><tr><th>Test Name</th><th>High</th><th>Mid</th><th>Low</th></tr></thead>
+        <tbody><tr>
+        <td>Correct tier is detected for each device class</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>RAF loop is running and incrementing frames over time</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>RAF pauses when tab is hidden and resumes when visible again</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>Touch interactions trigger ripple behavior and keep rendering stable</td>
+        <td class="na">N/A</td>
+        <td class="na">N/A</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>Floating mascot is present and visible on every tier</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>Frame skip ratio matches expected behavior for each tier</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr><tr>
+        <td>Correct quality values are applied per device tier</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+        <td class="ok">✅</td>
+      </tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Section 5: Recommendations</h2>
+      <ul><li>LCP exceeds 2.5s on Desktop High. Consider dynamic importing WebGLBackground after LCP paint.</li><li>Total Blocking Time on low tier is high. Check for synchronous operations during initialization.</li></ul>
+    </div>
+  </div>
+</body>
+</html>

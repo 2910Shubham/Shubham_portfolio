@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import StartupLoader from "@/components/startup-loader";
+import { DeviceClassProvider } from "@/hooks/useDeviceClass";
 import { queryClient } from "@/lib/queryClient";
 
 type ClientRootProps = {
@@ -27,14 +28,16 @@ export default function ClientRoot({ children }: ClientRootProps) {
   }, [showLoader]);
 
   return (
-    <>
-      {mounted && <StartupLoader visible={showLoader} onFinish={() => setShowLoader(false)} />}
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          {children}
-        </TooltipProvider>
-      </QueryClientProvider>
-    </>
+    <DeviceClassProvider>
+      <>
+        {mounted && <StartupLoader visible={showLoader} onFinish={() => setShowLoader(false)} />}
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            {children}
+          </TooltipProvider>
+        </QueryClientProvider>
+      </>
+    </DeviceClassProvider>
   );
 }
