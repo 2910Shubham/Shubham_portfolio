@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import GreenScreenVideo from "@/components/green-screen-video";
 
 interface StartupLoaderProps {
   visible: boolean;
@@ -166,14 +165,14 @@ export default function StartupLoader({ visible, onFinish }: StartupLoaderProps)
                 filter: "drop-shadow(0 0 28px rgba(129,140,248,0.45)) drop-shadow(0 10px 22px rgba(0,0,0,0.45))",
               }}
             >
-              <GreenScreenVideo
-                src="/video/5f8ac36069c54ea2a81c2b9ba67c8fb5.mp4"
-                className="w-full h-full"
-                keyColor={[0.0, 0.85, 0.0]}
-                similarity={0.35}
-                smoothness={0.12}
-                spill={0.6}
-                maxTilt={0}
+              <video
+                src="/video/mascot2.webm"
+                className="w-full h-full object-contain"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
               />
             </motion.div>
           </motion.div>

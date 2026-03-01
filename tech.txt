@@ -1,0 +1,444 @@
+# Shubham Portfolio - Engineering Deep Dive (for optimization)
+
+## 1) Executive Summary
+This website is a Next.js App Router project that renders static pages at build time and then runs a heavy client-side animation stack on top:
+- Next.js (App Router) for routing/build/deploy.
+- React 19 + Framer Motion for most UI/entrance/interaction animation.
+- GSAP for high-control project-card cinematic transitions.
+- Raw WebGL shader canvas for the global animated background.
+- Three.js shader overlay for project transition warping.
+- Lenis smooth scroll (desktop-oriented; native scroll fallback on mobile/coarse pointer).
+- Tone.js + HTMLAudioElement for interaction sounds.
+
+The site is visually rich and highly interactive, but current performance risk is primarily from continuous animation loops and layered effects (WebGL + mouse follower + floating mascot + many Framer animations), especially on mobile devices.
+
+---
+
+## 2) Project Architecture & Rendering
+
+### 2.1 Framework and Routing
+Current framework: Next.js App Router.
+Main files:
+- `app/layout.tsx`
+- `app/client-root.tsx`
+- `app/page.tsx`
+- `app/gallery/page.tsx`
+- `app/green-island/page.tsx`
+- `app/not-found.tsx`
+
+Rendering model:
+- Pages are statically generated (SSG-like static output from `next build` with static routes).
+- After hydration, almost all visual behavior is client-side.
+
+### 2.2 Global Shell
+`app/layout.tsx`:
+- Loads global CSS (`src/index.css`).
+- Loads Google fonts through `<link>`.
+- Sets initial theme class by inline script (dark default unless localStorage says light).
+
+`app/client-root.tsx`:
+- Client-only wrapper (`"use client"`).
+- Mounts startup loader.
+- Provides React Query provider and tooltip/toast providers.
+- Temporarily locks body scroll while loader is visible.
+
+### 2.3 Main Page Composition
+`src/views/home.tsx` composes:
+1. `Navigation`
+2. `HeroSection`
+3. `AboutSection`
+4. `ExperienceStory`
+5. `SkillsSection`
+6. `CareerTimeline`
+7. `ProjectsSection`
+8. `ContactSection`
+9. `GallerySection`
+10. `Footer`
+
+Always-on overlays:
+- `WebGLBackground` (fixed canvas)
+- `MouseFollower` (desktop pointer trail/rings)
+- `FloatingMascot` (fixed character that moves with scroll/cursor)
+
+---
+
+## 3) Tech Stack by Purpose
+
+### 3.1 Core UI
+- React 19: UI composition/state.
+- Next.js App Router: routing, build pipeline, static page generation.
+- Tailwind CSS v4 + CSS variables: theme and utility styling.
+
+### 3.2 Animation Layer
+- Framer Motion:
+  - section reveal animations
+  - hover/tap interactions
+  - text/hero animation
+  - navbar icon transitions
+  - loader motion timeline
+- GSAP:
+  - project card expand/collapse timelines
+  - synchronization of card clone + blur + panel reveal
+- CSS keyframes:
+  - marquee rows
+  - orbital ring rotation
+  - ticker strip scrolling
+  - subtle pulsing lines etc.
+
+### 3.3 Graphics Layer
+- Raw WebGL (`webgl-background.tsx`): custom fragment shader background.
+- Three.js (`cinematic-warp-overlay.tsx`): full-screen post-like shader during project transition.
+- Green-screen video rendering (`green-screen-video.tsx`): WebGL chroma key shader on a hidden `<video>` texture.
+
+### 3.4 Audio Layer
+- Tone.js in `webgl-background.tsx`:
+  - boom sound on dark-mode click ripple.
+- HTMLAudioElement in multiple components:
+  - typing effect sound in hero
+  - theme switch sound
+  - zoom transition sound in project section
+
+### 3.5 Data/UX Utilities
+- React Query provider exists globally, but core portfolio content is mostly local static data.
+- `src/data/projects.ts` drives project cards and detail content.
+
+---
+
+## 4) Background Engineering ("how BG is created")
+
+Main file: `src/components/webgl-background.tsx`
+
+Implementation:
+- Creates a fixed `<canvas>` covering viewport.
+- Initializes WebGL program with:
+  - simple pass-through vertex shader
+  - rich fragment shader (`FRAG`) containing:
+    - hash/noise/fbm procedural functions
+    - layered color fields (void black + purple + indigo + gold)
+    - mouse-based local warp and glow
+    - click ripple simulation (`u_ripples[5]`)
+    - sparse particles
+    - vignette
+    - light-mode branch with toned-down palette
+- Uniforms updated every frame:
+  - resolution, time, mouse, scroll, theme flag, ripples.
+- Uses `requestAnimationFrame` continuously.
+
+Interaction behavior:
+- Mouse move updates distortion center.
+- Scroll updates `u_scroll`.
+- Click pushes ripple event and optionally plays boom sound.
+
+Performance characteristics:
+- GPU heavy but controlled (pixel ratio clamped to <=1.5).
+- Continuous RAF regardless of viewport visibility.
+
+---
+
+## 5) Loader Engineering (from first paint to reveal)
+
+Main file: `src/components/startup-loader.tsx`
+
+Flow:
+1. Shows full-screen themed gradient overlay.
+2. Mascot (`GreenScreenVideo`) spins at configured origin.
+3. After timer, transitions to "fly" phase.
+4. Mascot slides to target (desktop: orbit center if available, mobile: configured corner path).
+5. Calls `onFinish`, then loader fades out.
+
+Important details:
+- Uses Framer Motion for both spin and flight.
+- Uses position coordinates and phase state.
+- Theme-aware background (dark vs light).
+- `client-root.tsx` mounts loader only after client mount to avoid hydration mismatch.
+
+Current mobile behavior intent:
+- Start near top-left and fly toward bottom-right.
+
+---
+
+## 6) Hero System (Desktop vs Mobile)
+
+Main file: `src/components/hero-section.tsx`
+
+### Desktop behavior
+- Two-column grid: text left, orbital system right (`1fr 420px`).
+- Orbital rings animated with CSS keyframes.
+- Floating mascot separately overlays/follows.
+- Typing headline effect (`useTypewriter`) with typing sound attempt.
+- Social row + CTA buttons with magnetic mouse transform behavior.
+- Ticker strip at bottom with continuous marquee.
+
+### Mobile behavior
+- Grid collapses to single column (`@media <=1023`).
+- Orbital right column hidden on mobile (`hidden lg:flex`).
+- Social row now wraps (recent fix) to avoid overflow.
+- Reduced side paddings via clamp.
+
+Potential mobile bottlenecks in hero:
+- Magnetic buttons still include mouse handlers (mostly harmless on touch).
+- Multiple independent animated elements running in parallel.
+
+---
+
+## 7) Floating Mascot Behavior
+
+Main file: `src/components/floating-mascot.tsx`
+
+Behavior model:
+- Fixed-position animated mascot that transitions from hero center to side-follow mode on scroll.
+- Uses internal RAF loop to:
+  - interpolate position,
+  - apply mouse-avoidance force,
+  - bob/sway,
+  - scroll-velocity tilt,
+  - flee impulse on click.
+- Shows speech bubbles based on click/proximity.
+
+Desktop:
+- Larger visual size and wider movement range.
+
+Mobile:
+- Reduced size and adjusted target positions.
+- Recent clamp logic updated to include real element dimensions to prevent horizontal overflow.
+
+Performance impact:
+- Continuous JS animation loop + many style writes every frame.
+
+---
+
+## 8) Navigation & Theme System
+
+Main file: `src/components/navigation.tsx`
+
+Desktop:
+- Floating nav with active section tracking from scroll.
+- Dock-like magnification effect via Framer Motion (`useMotionValue` + springs).
+- Theme toggle icon animated with `AnimatePresence`.
+
+Mobile:
+- Compact top bar with theme + menu.
+- Slide-down menu panel for section links.
+
+Theme mechanics:
+- Uses `<html>.dark` class and localStorage persistence.
+- Theme switch sound effect on toggle.
+
+---
+
+## 9) Project Cards & Detail Transition Engineering
+
+Main file: `src/components/projects-section.tsx`
+
+Card grid:
+- Bento-like varied card sizes.
+- Framer entrance animations.
+- Hover gradient/radial follow.
+
+Open transition (card -> detail):
+1. Clone clicked card into fixed positioned element.
+2. Blur/fade grid content via GSAP.
+3. Expand clone to full viewport via GSAP timeline.
+4. Activate shader warp overlay (`CinematicWarpOverlay`) driven by `warpProgress`.
+5. Reveal detail panel.
+
+Back transition:
+- Reverse sequence with clone back to original card rect.
+
+Detail loading behavior:
+- Inside detail panel, additional sections fade in based on scroll depth (`detailLoadStep`).
+
+Audio:
+- Plays zoom SFX (`Zoom 8.mp3`) on open.
+
+Theming:
+- Detail panel visuals adapt for dark/light mode.
+
+### Three.js warp overlay
+Main file: `src/components/cinematic-warp-overlay.tsx`
+- Separate fixed overlay renderer.
+- Fragment shader creates barrel warp + chromatic aberration + ring ripple.
+- Driven by `uProgress` uniform from GSAP timeline.
+
+Performance note:
+- Running both base WebGL background and transition overlay can spike GPU during transitions.
+
+---
+
+## 10) Other Sections
+
+### About (`about-section.tsx`)
+- Framer reveal and image/profile block.
+- Skill pills with icon accents.
+
+### Experience Story (`experience-story.tsx`)
+- Chapter-based narrative cards.
+- Per-card scroll tracking via `useScroll` + transforms.
+
+### Skills (`skills-section.tsx`)
+- Infinite dual-row marquee of tech cards.
+- Uses external icon CDN (devicon via jsdelivr).
+
+### Career Timeline (`career-timeline.tsx`)
+- Vertical timeline with growing center line and per-item reveal motion.
+
+### Contact (`contact-section.tsx`)
+- Client-side form state + Framer transitions.
+- Submission to formsubmit endpoint.
+
+### Gallery (`views/gallery.tsx`)
+- Dual marquee rows with CSS keyframes.
+- Lightbox modal with framer transitions.
+
+### Footer (`footer.tsx`)
+- Large branded typography + links.
+- Scroll-to-top button appears via IntersectionObserver.
+
+---
+
+## 11) Fonts, Typography, and Style System
+
+Fonts loaded in `app/layout.tsx` (Google Fonts):
+- Bebas Neue
+- DM Serif Display
+- JetBrains Mono
+- Space Grotesk
+
+Usage pattern:
+- Display/headline: Bebas Neue / DM Serif Display
+- Technical UI labels: JetBrains Mono
+- Body/default: Space Grotesk
+
+Theme system:
+- CSS variables in `src/index.css`.
+- Distinct light/dark token sets for Liquid Intelligence style.
+
+---
+
+## 12) Desktop vs Mobile Behavior Matrix
+
+### Desktop
+- Lenis smooth scrolling active.
+- Mouse follower visible.
+- Orbital hero right column visible.
+- Larger floating mascot and richer hover interactions.
+- Full dock-like navbar behavior.
+
+### Mobile
+- Native scrolling fallback (Lenis disabled by pointer/viewport check).
+- Mouse follower auto-disabled for coarse pointer.
+- Hero one-column layout.
+- Orbital visual section hidden in hero.
+- Floating mascot clamped for viewport safety.
+- Compact mobile nav/menu.
+
+---
+
+## 13) High-Impact Performance Risks (current)
+
+1. Multiple perpetual animation loops:
+- WebGL background RAF
+- Floating mascot RAF
+- Mouse follower RAF (desktop)
+- Framer animated components
+
+2. GPU stacking:
+- Full-screen shader background + blur layers + transition shader overlay + drop shadows.
+
+3. Event density:
+- Frequent mouse/scroll handlers updating styles.
+
+4. Large JS bundle:
+- Includes three.js, gsap, tone, many UI libs.
+
+5. Media handling:
+- Chroma-key video rendering is expensive (video decode + WebGL upload each frame).
+
+6. CSS/JS marquess:
+- Multiple infinite keyframe loops.
+
+---
+
+## 14) Optimization Strategy (practical roadmap)
+
+### Phase 1 (quick wins, low risk)
+1. Add feature flags per device class:
+- On mobile low-end: disable `MouseFollower`, reduce `FloatingMascot` complexity, lower WebGL opacity/effect complexity.
+2. Pause animations when tab hidden:
+- Listen to `visibilitychange` and suspend RAF loops.
+3. Reduce WebGL load:
+- Lower max pixel ratio from 1.5 to 1.0 on mobile.
+4. Replace always-on listeners where possible with passive/throttled handlers.
+5. Remove unused dependency paths (`wouter`, Vite plugin dependencies still in package) to shrink install/bundle overhead.
+
+### Phase 2 (medium effort)
+1. Dynamic import heavy visual components:
+- `WebGLBackground`, `CinematicWarpOverlay`, maybe `FloatingMascot`.
+2. Code-split route-level heavy pages/components.
+3. Convert repeated motion patterns to CSS transitions where possible.
+4. Optimize project images (responsive sizes, modern formats, Next Image where feasible).
+
+### Phase 3 (advanced)
+1. Adaptive quality manager:
+- Detect FPS + hardware concurrency and auto-downgrade effects.
+2. Consolidate animation loops:
+- Central scheduler rather than multiple independent RAFs.
+3. Consider offscreen canvas patterns for background effects.
+
+---
+
+## 15) Immediate Priorities for Your Performance Research
+
+If your goal is best mobile performance first, measure these in order:
+1. Disable `WebGLBackground` on mobile and compare scroll smoothness.
+2. Keep WebGL, disable `FloatingMascot` on mobile and compare.
+3. Keep both, disable `MouseFollower` (desktop-only already) and compare.
+4. Profile project transition overlay on mid-range Android.
+5. Capture Lighthouse + Web Vitals after each change.
+
+Recommended KPI targets:
+- CLS < 0.1
+- LCP < 2.5s (mobile 4G)
+- Smooth scroll no visible stutter under hero + projects transition
+- JS main thread long tasks minimized during initial 5 seconds
+
+---
+
+## 16) File Map (most important)
+
+Core app shell:
+- `app/layout.tsx`
+- `app/client-root.tsx`
+
+Main page and sections:
+- `src/views/home.tsx`
+- `src/components/hero-section.tsx`
+- `src/components/about-section.tsx`
+- `src/components/experience-story.tsx`
+- `src/components/skills-section.tsx`
+- `src/components/career-timeline.tsx`
+- `src/components/projects-section.tsx`
+- `src/components/contact-section.tsx`
+- `src/views/gallery.tsx`
+- `src/components/footer.tsx`
+
+Visual systems:
+- `src/components/webgl-background.tsx`
+- `src/components/cinematic-warp-overlay.tsx`
+- `src/components/floating-mascot.tsx`
+- `src/components/mouse-follower.tsx`
+- `src/components/startup-loader.tsx`
+- `src/components/green-screen-video.tsx`
+
+Data/theme/scroll:
+- `src/data/projects.ts`
+- `src/index.css`
+- `src/hooks/use-smooth-scroll.ts`
+
+---
+
+## 17) Final Notes
+- SSG migration does not automatically improve runtime animation performance; most bottlenecks are post-hydration interactive effects.
+- The site is creatively engineered with strong visual identity.
+- For optimization, focus on adaptive quality by device class rather than removing all animation.
+

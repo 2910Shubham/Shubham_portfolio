@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, memo } from "react";
-import GreenScreenVideo from "./green-screen-video";
 
 /*
  * FloatingMascot — The cat companion
@@ -294,14 +293,14 @@ const FloatingMascot = memo(function FloatingMascot() {
                     @media (min-width: 768px) { .mascot-size { width: 220px; height: 268px; } }
                     @media (min-width: 1024px) { .mascot-size { width: 280px; height: 340px; } }
                 `}</style>
-                <GreenScreenVideo
-                    src="/video/5f8ac36069c54ea2a81c2b9ba67c8fb5.mp4"
-                    className="w-full h-full"
-                    keyColor={[0.0, 0.85, 0.0]}
-                    similarity={0.35}
-                    smoothness={0.12}
-                    spill={0.6}
-                    maxTilt={6}
+                <video
+                    src="/video/mascot2.webm"
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
                 />
             </div>
 

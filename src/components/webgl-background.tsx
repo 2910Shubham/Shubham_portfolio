@@ -184,6 +184,23 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
   const boomBusRef = useRef<any>(null);
   const boomReadyRef = useRef(false);
   const lastBoomAtRef = useRef(0);
+  const frameCountRef = useRef(0);
+  const isTabVisibleRef = useRef(true);
+  const isRAFRunningRef = useRef(false);
+
+  const updateDevMetrics = useCallback(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    if (typeof window === "undefined") return;
+    (
+      window as Window & {
+        __webglMetrics?: { isRAFRunning: boolean; isTabVisible: boolean; frameCount: number };
+      }
+    ).__webglMetrics = {
+      isRAFRunning: isRAFRunningRef.current,
+      isTabVisible: isTabVisibleRef.current,
+      frameCount: frameCountRef.current,
+    };
+  }, []);
   useEffect(() => {
     let disposed = false;
 
@@ -353,6 +370,8 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
     window.addEventListener("click", onClick);
 
     const render = () => {
+      frameCountRef.current += 1;
+      updateDevMetrics();
       const t = performance.now() / 1000 - startTimeRef.current;
       gl.uniform2f(u["u_resolution"]!, canvas.width, canvas.height);
       gl.uniform1f(u["u_time"]!, t);
@@ -366,16 +385,45 @@ export default function WebGLBackground({ isDark }: WebGLBackgroundProps) {
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       rafRef.current = requestAnimationFrame(render);
     };
-    rafRef.current = requestAnimationFrame(render);
+    const startRenderLoop = () => {
+      if (rafRef.current !== 0) return;
+      isRAFRunningRef.current = true;
+      updateDevMetrics();
+      rafRef.current = requestAnimationFrame(render);
+    };
+    const stopRenderLoop = () => {
+      if (rafRef.current === 0) return;
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+      isRAFRunningRef.current = false;
+      updateDevMetrics();
+    };
+    const onVisibilityChange = () => {
+      isTabVisibleRef.current = !document.hidden;
+      updateDevMetrics();
+      if (document.hidden) {
+        stopRenderLoop();
+      } else {
+        startRenderLoop();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    isTabVisibleRef.current = !document.hidden;
+    updateDevMetrics();
+    startRenderLoop();
 
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("click", onClick);
-      cancelAnimationFrame(rafRef.current);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      stopRenderLoop();
+      if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
+        delete (window as Window & { __webglMetrics?: unknown }).__webglMetrics;
+      }
     };
-  }, [initGL, isDark]);
+  }, [initGL, isDark, updateDevMetrics]);
 
   return (
     <canvas
