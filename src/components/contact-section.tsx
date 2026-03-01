@@ -48,20 +48,24 @@ export default function ContactSection() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("https://formsubmit.co/11416ddb6de5e013bfef4560e848e888", {
+      const payload = new FormData();
+      payload.append("name", formData.name);
+      payload.append("email", formData.email);
+      payload.append("message", formData.message);
+      payload.append("_subject", `Portfolio Contact: ${formData.name}`);
+      payload.append("_captcha", "false");
+      payload.append("_template", "table");
+
+      const response = await fetch("https://formsubmit.co/ajax/11416ddb6de5e013bfef4560e848e888", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-        }),
+        body: payload,
       });
+      const data = (await response.json().catch(() => null)) as { success?: string } | null;
 
-      if (response.ok) {
+      if (response.ok && data?.success === "true") {
         setSubmitStatus("success");
         setFormData({ name: "", email: "", message: "" });
         setTimeout(() => setSubmitStatus("idle"), 3000);
