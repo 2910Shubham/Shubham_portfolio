@@ -61,9 +61,11 @@ export default function AboutSection() {
               <div className="relative mb-8">
                 <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full overflow-hidden ">
                   <img
-                    src="images/shubham1.png"
+                    src="images/Shubham.webp"
                     alt="Shubham Kumar Mishra"
-                    className=""
+                    width={320}
+                    height={320}
+                    className="w-full object-cover"
                   />
                 </div>
               </div>

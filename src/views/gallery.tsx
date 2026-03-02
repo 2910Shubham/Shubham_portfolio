@@ -9,16 +9,18 @@ interface GalleryItem {
 }
 
 const allItems: GalleryItem[] = [
-  { src: "cirtificates/Hackit.jpg", event: "Hackit", category: "certificate" },
-  { src: "cirtificates/logovatio0n.jpg", event: "LogoVation", category: "certificate" },
-  { src: "cirtificates/SIH2024.jpg", event: "SIH 2024", category: "certificate" },
-  { src: "cirtificates/Techphilia.jpg", event: "Techphilia", category: "certificate" },
-  { src: "images/LogoVationPrizeREcieving.jpg", event: "Logovation — Prize Ceremony", category: "photo" },
-  { src: "images/Sih1.jpg", event: "Smart India Hackathon", category: "photo" },
-  { src: "images/Sih2.jpg", event: "Smart India Hackathon — Team", category: "photo" },
-  { src: "images/Sih3.jpg", event: "Smart India Hackathon — Presentation", category: "photo" },
-  { src: "images/techphiliaPrizeReciving.jpg", event: "Techphilia — Winner", category: "photo" },
+  { src: "cirtificates/HackIT.webp", event: "Hackit", category: "certificate" },
+  { src: "cirtificates/Logovatiobn.webp", event: "LogoVation", category: "certificate" },
+  { src: "cirtificates/SIH2024.webp", event: "SIH 2024", category: "certificate" },
+  { src: "cirtificates/Techphilia.webp", event: "Techphilia", category: "certificate" },
+  { src: "cirtificates/Virasat.webp", event: "Virasat", category: "certificate" },
+  { src: "images/LogoVationPrizeREcieving.webp", event: "Logovation — Prize Ceremony", category: "photo" },
+  { src: "images/Sih1.webp", event: "Smart India Hackathon", category: "photo" },
+  { src: "images/Sih2.webp", event: "Smart India Hackathon — Team", category: "photo" },
+  { src: "images/Sih3.webp", event: "Smart India Hackathon — Presentation", category: "photo" },
+  { src: "images/techphiliaPrizeReciving.webp", event: "Techphilia — Winner", category: "photo" },
   { src: "images/TechphiliaSoloWithCheck.jpg", event: "Techphilia — Prize Check", category: "photo" },
+  { src: "images/Virasat.webp", event: "Virasat", category: "photo" },
 ];
 
 /* ── Infinite marquee row ── */

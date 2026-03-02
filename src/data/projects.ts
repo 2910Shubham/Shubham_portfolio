@@ -21,7 +21,7 @@ export const PROJECTS: Project[] = [
     category: "Mobile App",
     description:
       "Cross-platform Flutter app with real-time location tracking, integrated payments, and MVP architecture.",
-    image: "/projects/TukuGO.png",
+    image: "/projects/TukuGO.webp",
     technologies: ["Flutter", "Dart", "Firebase", "Google Maps API"],
     link: null,
     details: {
@@ -46,7 +46,7 @@ export const PROJECTS: Project[] = [
     category: "E-Commerce",
     description:
       "$500K+ annual GMV, 15K+ monthly visitors, 3.5% cart abandonment. Production-grade storefront.",
-    image: "/projects/puffNmore.com.png",
+    image: "/projects/puffNmore.com.webp",
     technologies: ["React", "Node.js", "MongoDB", "Express.js", "Stripe"],
     link: "https://puffsnmore.com/",
     details: {
@@ -71,7 +71,7 @@ export const PROJECTS: Project[] = [
     category: "Marketplace",
     description:
       "Campus marketplace with real-time chat, seller verification, and full development lifecycle ownership.",
-    image: "/projects/campusKart.png",
+    image: "/projects/campusKart.webp",
     technologies: ["Node.js", "Express", "MongoDB", "Socket.io"],
     link: "https://campuskart.meetshubham.site/",
     details: {
@@ -96,7 +96,7 @@ export const PROJECTS: Project[] = [
     category: "Business Site",
     description:
       "B2B company portal with service showcase, lead capture forms, and modern React build.",
-    image: "/projects/mishrasenterprises.in.png",
+    image: "/projects/mishrasenterprises.in.webp",
     technologies: ["React", "Node.js", "Vite", "Tailwind CSS"],
     link: "https://mishrasenterprises.in/",
     details: {
@@ -121,7 +121,7 @@ export const PROJECTS: Project[] = [
     category: "Education",
     description:
       "Static website with course portal, mobile-responsive design, and SEO optimization.",
-    image: "/projects/successgateway.co.in.png",
+    image: "/projects/successgateway.co.in.webp",
     technologies: ["HTML", "Tailwind CSS", "JavaScript"],
     link: "https://successgateway.co.in/",
     details: {
@@ -146,7 +146,7 @@ export const PROJECTS: Project[] = [
     category: "AI / Research",
     description:
       "Data-driven platform to detect, visualize, and mitigate Urban Heat Islands using satellite data and AI.",
-    image: "/projects/UHI.png",
+    image: "/projects/UHI.webp",
     technologies: ["Next.js", "Streamlit", "Leaflet.js", "Python", "TensorFlow", "GDAL"],
     link: "https://greenisland-uhi.vercel.app/",
     details: {
